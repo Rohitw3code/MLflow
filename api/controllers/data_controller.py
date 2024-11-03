@@ -74,3 +74,12 @@ class DataController:
             return jsonify(types), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+            
+    def get_visualization_data(self, x_column, y_column=None):
+        try:
+            result = self.dataset.get_visualization_data(x_column, y_column)
+            if result['success']:
+                return jsonify(result['data']), 200
+            return jsonify({'error': result['error']}), 400
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500

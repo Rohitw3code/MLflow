@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart2,
   LineChart as LineChartIcon,
   PieChart as PieChartIcon,
-  Box,
   Activity,
   ChevronDown,
   ChevronUp,
@@ -25,80 +24,163 @@ import {
   Scatter,
   Cell
 } from 'recharts';
-
-// Dummy data for visualization
-const dummyData = {
-  numerical: ['Age', 'Income', 'Score', 'Sales', 'Profit'],
-  categorical: ['Category', 'Region', 'Status'],
-  data: Array.from({ length: 50 }, (_, i) => ({
-    Age: Math.floor(Math.random() * 50) + 20,
-    Income: Math.floor(Math.random() * 100000) + 30000,
-    Score: Math.floor(Math.random() * 100),
-    Sales: Math.floor(Math.random() * 1000) + 100,
-    Profit: Math.floor(Math.random() * 500) + 50,
-    Category: ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
-    Region: ['North', 'South', 'East', 'West'][Math.floor(Math.random() * 4)],
-    Status: ['Active', 'Inactive'][Math.floor(Math.random() * 2)],
-  })),
-};
+import { dataApi, preprocessApi } from '../../api';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe'];
 
-type ChartType = 'line' | 'bar' | 'pie' | 'scatter' | 'box' | 'area';
+type ChartType = 'line' | 'bar' | 'pie' | 'scatter';
 
 interface ChartConfig {
   type: ChartType;
   xAxis: string;
   yAxis?: string;
-  groupBy?: string;
+}
+
+interface ColumnType {
+  name: string;
+  current_type: string;
 }
 
 export function DataVisualization() {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [columns, setColumns] = useState<string[]>([]);
   const [chartConfig, setChartConfig] = useState<ChartConfig>({
     type: 'line',
-    xAxis: dummyData.numerical[0],
-    yAxis: dummyData.numerical[1],
+    xAxis: '',
+    yAxis: '',
   });
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  const loadColumnTypes = async () => {
+    try {
+      const response = await dataApi.getColumnTypes();
+      const numericColumns = response.columns
+        .filter((col: ColumnType) => 
+          col.current_type.includes('int') || 
+          col.current_type.includes('float'))
+        .map((col: ColumnType) => col.name);
+      
+      setColumns(numericColumns);
+      if (numericColumns.length > 1) {
+        setChartConfig({
+          ...chartConfig,
+          xAxis: numericColumns[0],
+          yAxis: numericColumns[1],
+        });
+      }
+    } catch (err) {
+      setError('Failed to load columns');
+    }
+  };
+
+  const fetchVisualizationData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await preprocessApi.getColumnValues(
+        chartConfig.xAxis,
+        chartConfig.yAxis
+      );
+      
+      const visualData = response.column1.map((value: any, index: number) => ({
+        [chartConfig.xAxis]: value,
+        [chartConfig.yAxis!]: response.column2[index],
+      }));
+      
+      setChartData(visualData);
+      setDataLoaded(true);
+    } catch (err) {
+      setError('Failed to fetch visualization data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (expanded && chartConfig.xAxis && chartConfig.yAxis) {
+      fetchVisualizationData();
+    }
+  }, [chartConfig.xAxis, chartConfig.yAxis, chartConfig.type, expanded]);
 
   const renderChart = () => {
-    const { type, xAxis, yAxis, groupBy } = chartConfig;
+    const { type, xAxis, yAxis } = chartConfig;
 
     switch (type) {
       case 'line':
         return (
-          <LineChart data={dummyData.data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xAxis} />
-            <YAxis />
-            <Tooltip />
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey={xAxis} stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
+              labelStyle={{ color: '#9CA3AF' }}
+            />
             <Legend />
-            <Line type="monotone" dataKey={yAxis} stroke="#8884d8" />
+            <Line 
+              type="monotone" 
+              dataKey={yAxis} 
+              stroke="#8B5CF6"
+              strokeWidth={2}
+              dot={{ fill: '#8B5CF6' }}
+              activeDot={{ r: 8 }}
+            />
           </LineChart>
         );
 
       case 'bar':
         return (
-          <BarChart data={dummyData.data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xAxis} />
-            <YAxis />
-            <Tooltip />
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey={xAxis} stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
+              labelStyle={{ color: '#9CA3AF' }}
+            />
             <Legend />
-            <Bar dataKey={yAxis} fill="#8884d8" />
+            <Bar 
+              dataKey={yAxis} 
+              fill="#8B5CF6"
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         );
 
+      case 'scatter':
+        return (
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey={xAxis} name={xAxis} stroke="#9CA3AF" />
+            <YAxis dataKey={yAxis} name={yAxis} stroke="#9CA3AF" />
+            <Tooltip 
+              cursor={{ strokeDasharray: '3 3' }}
+              contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
+              labelStyle={{ color: '#9CA3AF' }}
+            />
+            <Legend />
+            <Scatter 
+              name={`${xAxis} vs ${yAxis}`} 
+              data={chartData} 
+              fill="#8B5CF6"
+              shape="circle"
+            />
+          </ScatterChart>
+        );
+
       case 'pie':
-        const pieData = dummyData.data.reduce((acc: any[], curr) => {
-          const key = curr[xAxis as keyof typeof curr];
+        const pieData = chartData.reduce((acc: any[], curr) => {
+          const key = curr[xAxis];
           const existing = acc.find((item) => item.name === key);
           if (existing) {
-            existing.value += yAxis ? curr[yAxis as keyof typeof curr] : 1;
+            existing.value += yAxis ? curr[yAxis] : 1;
           } else {
             acc.push({
               name: key,
-              value: yAxis ? curr[yAxis as keyof typeof curr] : 1,
+              value: yAxis ? curr[yAxis] : 1,
             });
           }
           return acc;
@@ -111,39 +193,24 @@ export function DataVisualization() {
               cx="50%"
               cy="50%"
               labelLine={false}
-              label={({ name, percent }) =>
-                `${name}: ${(percent * 100).toFixed(0)}%`
-              }
+              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               outerRadius={80}
-              fill="#8884d8"
+              fill="#8B5CF6"
               dataKey="value"
             >
               {pieData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
+                <Cell 
+                  key={`cell-${index}`} 
                   fill={COLORS[index % COLORS.length]}
                 />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip 
+              contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
+              labelStyle={{ color: '#9CA3AF' }}
+            />
             <Legend />
           </PieChart>
-        );
-
-      case 'scatter':
-        return (
-          <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey={xAxis} name={xAxis} />
-            <YAxis dataKey={yAxis} name={yAxis} />
-            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-            <Legend />
-            <Scatter
-              name={`${xAxis} vs ${yAxis}`}
-              data={dummyData.data}
-              fill="#8884d8"
-            />
-          </ScatterChart>
         );
 
       default:
@@ -152,16 +219,19 @@ export function DataVisualization() {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
+    <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg transform transition-all duration-300">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          setExpanded(!expanded);
+          if (!dataLoaded && !isLoading) {
+            loadColumnTypes();
+          }
+        }}
         className="w-full flex items-center justify-between mb-4"
       >
         <div className="flex items-center space-x-3">
           <BarChart2 className="w-5 h-5 text-purple-400" />
-          <h3 className="text-lg font-semibold text-white">
-            Data Visualization
-          </h3>
+          <h3 className="text-lg font-semibold text-white">Data Visualization</h3>
         </div>
         {expanded ? (
           <ChevronUp className="w-5 h-5 text-gray-400" />
@@ -171,106 +241,99 @@ export function DataVisualization() {
       </button>
 
       {expanded && (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <button
-              onClick={() => setChartConfig({ ...chartConfig, type: 'line' })}
-              className={`p-4 rounded-lg flex flex-col items-center space-y-2 ${
-                chartConfig.type === 'line'
-                  ? 'bg-purple-600/20 border-purple-600 border'
-                  : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-            >
-              <LineChartIcon className="w-6 h-6 text-purple-400" />
-              <span className="text-gray-300">Line Chart</span>
-            </button>
-
-            <button
-              onClick={() => setChartConfig({ ...chartConfig, type: 'bar' })}
-              className={`p-4 rounded-lg flex flex-col items-center space-y-2 ${
-                chartConfig.type === 'bar'
-                  ? 'bg-purple-600/20 border-purple-600 border'
-                  : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-            >
-              <BarChart2 className="w-6 h-6 text-purple-400" />
-              <span className="text-gray-300">Bar Chart</span>
-            </button>
-
-            <button
-              onClick={() => setChartConfig({ ...chartConfig, type: 'pie' })}
-              className={`p-4 rounded-lg flex flex-col items-center space-y-2 ${
-                chartConfig.type === 'pie'
-                  ? 'bg-purple-600/20 border-purple-600 border'
-                  : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-            >
-              <PieChartIcon className="w-6 h-6 text-purple-400" />
-              <span className="text-gray-300">Pie Chart</span>
-            </button>
-
-            <button
-              onClick={() => setChartConfig({ ...chartConfig, type: 'scatter' })}
-              className={`p-4 rounded-lg flex flex-col items-center space-y-2 ${
-                chartConfig.type === 'scatter'
-                  ? 'bg-purple-600/20 border-purple-600 border'
-                  : 'bg-slate-800 hover:bg-slate-700'
-              }`}
-            >
-              <Activity className="w-6 h-6 text-purple-400" />
-              <span className="text-gray-300">Scatter Plot</span>
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
-                X-Axis
-              </label>
-              <select
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2"
-                value={chartConfig.xAxis}
-                onChange={(e) =>
-                  setChartConfig({ ...chartConfig, xAxis: e.target.value })
-                }
-              >
-                {[...dummyData.numerical, ...dummyData.categorical].map(
-                  (column) => (
-                    <option key={column} value={column}>
-                      {column}
-                    </option>
-                  )
-                )}
-              </select>
+        <div className="space-y-6 animate-fadeIn">
+          {error && (
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
+              {error}
             </div>
+          )}
 
-            {chartConfig.type !== 'pie' && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-300">
-                  Y-Axis
-                </label>
-                <select
-                  className="w-full bg-slate-700 text-white rounded-lg px-3 py-2"
-                  value={chartConfig.yAxis}
-                  onChange={(e) =>
-                    setChartConfig({ ...chartConfig, yAxis: e.target.value })
-                  }
-                >
-                  {dummyData.numerical.map((column) => (
-                    <option key={column} value={column}>
-                      {column}
-                    </option>
-                  ))}
-                </select>
+          {!dataLoaded && !isLoading ? (
+            <div className="text-center py-4">
+              <button
+                onClick={loadColumnTypes}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transform transition-all duration-300 hover:scale-105"
+              >
+                Load Data
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {['line', 'bar', 'scatter', 'pie'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setChartConfig({ ...chartConfig, type: type as ChartType })}
+                    className={`p-4 rounded-lg flex flex-col items-center space-y-2 transform transition-all duration-300 hover:scale-105 ${
+                      chartConfig.type === type
+                        ? 'bg-purple-600/20 border-purple-600 border'
+                        : 'bg-slate-800 hover:bg-slate-700'
+                    }`}
+                  >
+                    {type === 'line' && <LineChartIcon className="w-6 h-6 text-purple-400" />}
+                    {type === 'bar' && <BarChart2 className="w-6 h-6 text-purple-400" />}
+                    {type === 'pie' && <PieChartIcon className="w-6 h-6 text-purple-400" />}
+                    {type === 'scatter' && <Activity className="w-6 h-6 text-purple-400" />}
+                    <span className="text-gray-300 capitalize">{type} Chart</span>
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
 
-          <div className="bg-slate-800 p-4 rounded-lg" style={{ height: '400px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              {renderChart()}
-            </ResponsiveContainer>
-          </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    X-Axis
+                  </label>
+                  <select
+                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 transition-colors hover:bg-slate-600"
+                    value={chartConfig.xAxis}
+                    onChange={(e) =>
+                      setChartConfig({ ...chartConfig, xAxis: e.target.value })
+                    }
+                  >
+                    <option value="">Select column</option>
+                    {columns.map((column) => (
+                      <option key={column} value={column}>
+                        {column}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300">
+                    Y-Axis
+                  </label>
+                  <select
+                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 transition-colors hover:bg-slate-600"
+                    value={chartConfig.yAxis}
+                    onChange={(e) =>
+                      setChartConfig({ ...chartConfig, yAxis: e.target.value })
+                    }
+                  >
+                    <option value="">Select column</option>
+                    {columns.map((column) => (
+                      <option key={column} value={column}>
+                        {column}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {isLoading ? (
+                <div className="text-center text-gray-400 py-4">Loading chart data...</div>
+              ) : (
+                chartData.length > 0 && (
+                  <div className="bg-slate-800 p-4 rounded-lg transform transition-all duration-300 hover:bg-slate-700" style={{ height: '400px' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      {renderChart()}
+                    </ResponsiveContainer>
+                  </div>
+                )
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

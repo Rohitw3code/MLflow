@@ -50,3 +50,13 @@ def get_dataset():
 @api.route('/column-types', methods=['GET'])
 def get_column_types():
     return controller.get_column_types()
+
+@api.route('/visualization-data', methods=['GET'])
+def get_visualization_data():
+    x_column = request.args.get('x_column')
+    y_column = request.args.get('y_column', None)
+    
+    if not x_column:
+        return {'error': 'x_column is required'}, 400
+        
+    return controller.get_visualization_data(x_column, y_column)

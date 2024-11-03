@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, ChevronDown, ChevronUp } from 'lucide-react';
-import { dataApi } from '../../api'; // Corrected import path
-import { preprocessApi } from '../../api'; // Import the preprocessApi
+import { dataApi } from '../../api';
+import { preprocessApi } from '../../api';
 
 type ImputationMethod = 'mean' | 'median' | 'mode' | 'remove' | 'value';
 
@@ -22,8 +22,9 @@ interface ShapeData {
 }
 
 const dummyData = [
-  { column: 'Column 1', missing_count: 10 },
-  { column: 'Column 2', missing_count: 20 },
+  { column: 'Age', missing_count: 10 },
+  { column: 'Salary', missing_count: 15 },
+  { column: 'Department', missing_count: 5 },
 ];
 
 export function MissingValues() {
@@ -32,44 +33,42 @@ export function MissingValues() {
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
   const [missingData, setMissingData] = useState<MissingValueData[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const shapeResponse: ShapeData = await dataApi.getShape();
-        const missingValuesResponse = await dataApi.getMissingValues();
+  const fetchMissingData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const shapeResponse: ShapeData = await dataApi.getShape();
+      const missingValuesResponse = await dataApi.getMissingValues();
 
-        setTotalRows(shapeResponse.rows);
-
-        // Filter out columns without missing values
-        const filteredMissingValues = missingValuesResponse.data.filter(
-          (item: MissingValueData) => item.missing_count > 0
-        );
-
-        setMissingData(filteredMissingValues);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
+      setTotalRows(shapeResponse.rows);
+      const filteredMissingValues = missingValuesResponse.data.filter(
+        (item: MissingValueData) => item.missing_count > 0
+      );
+      setMissingData(filteredMissingValues.length > 0 ? filteredMissingValues : dummyData);
+      setDataLoaded(true);
+    } catch (error) {
+      setError('Failed to fetch missing values data');
+      setMissingData(dummyData);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleImputation = async (column: string) => {
     if (!selectedImputations[column]) return;
 
     const { method } = selectedImputations[column];
-
-    console.log("methdo : "+method+" column : "+column);
-
     setProcessing((prev) => ({ ...prev, [column]: true }));
 
     try {
-      // Call the handleMissingValues API
       await preprocessApi.handleMissingValues(column, method);
-      // Optionally, you could update the UI or show a success message here
+      await fetchMissingData();
     } catch (error) {
-      console.error('Error handling missing values:', error);
+      setError('Failed to handle missing values');
     } finally {
       setProcessing((prev) => ({ ...prev, [column]: false }));
     }
@@ -78,7 +77,12 @@ export function MissingValues() {
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => {
+          setExpanded(!expanded);
+          if (!dataLoaded && !isLoading) {
+            fetchMissingData();
+          }
+        }}
         className="w-full flex items-center justify-between"
       >
         <div className="flex items-center space-x-3">
@@ -96,7 +100,24 @@ export function MissingValues() {
 
       {expanded && (
         <div className="mt-4 grid grid-cols-1 gap-4">
-          {missingData.length > 0 ? (
+          {error && (
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          {isLoading ? (
+            <div className="text-center text-gray-400 py-4">Loading missing values data...</div>
+          ) : !dataLoaded ? (
+            <div className="text-center py-4">
+              <button
+                onClick={fetchMissingData}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg"
+              >
+                Load Missing Values Data
+              </button>
+            </div>
+          ) : (
             missingData.map(({ column, missing_count }) => {
               const percentage = ((missing_count / totalRows) * 100).toFixed(2);
 
@@ -166,18 +187,6 @@ export function MissingValues() {
                 </div>
               );
             })
-          ) : (
-            <div className="bg-slate-800 p-4 rounded-lg">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-white font-medium">Dummy Data</h4>
-              </div>
-              {dummyData.map(({ column, missing_count }) => (
-                <div key={column} className="flex justify-between text-gray-400">
-                  <p>{column}</p>
-                  <p>{missing_count} missing values</p>
-                </div>
-              ))}
-            </div>
           )}
         </div>
       )}

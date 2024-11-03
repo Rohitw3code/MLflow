@@ -4,6 +4,7 @@ import numpy as np
 class Dataset:
     def __init__(self):
         self.df = pd.read_csv('api/data/sample.csv')
+        self.preprocessed_df = self.df.copy()
     
     def _convert_to_json_serializable(self, value):
         if pd.isna(value):
@@ -23,6 +24,7 @@ class Dataset:
     
     def load_data(self, filename='api/data/sample.csv'):
         self.df = pd.read_csv(filename)
+        self.preprocessed_df = self.df.copy()
         return True
     
     def get_head(self, n=5):
@@ -80,15 +82,43 @@ class Dataset:
     
     def update_column_type(self, column, dtype):
         try:
-            self.df[column] = self.df[column].astype(dtype)
-            return {'message': f'Column {column} type updated to {dtype}', 'success': True}
+            if dtype == 'int64':
+                # First convert to float to handle any NaN values
+                self.preprocessed_df[column] = pd.to_numeric(self.preprocessed_df[column], errors='raise')
+                # Then convert to int if all values are whole numbers
+                if self.preprocessed_df[column].dropna().apply(float.is_integer).all():
+                    self.preprocessed_df[column] = self.preprocessed_df[column].astype('Int64')  # nullable integer type
+                else:
+                    raise ValueError("Column contains non-integer values")
+            elif dtype == 'float64':
+                self.preprocessed_df[column] = pd.to_numeric(self.preprocessed_df[column], errors='raise')
+            elif dtype == 'datetime':
+                self.preprocessed_df[column] = pd.to_datetime(self.preprocessed_df[column], errors='raise')
+            else:
+                self.preprocessed_df[column] = self.preprocessed_df[column].astype(dtype)
+            
+            return {
+                'message': f'Column {column} type updated to {dtype}',
+                'success': True,
+                'new_type': str(self.preprocessed_df[column].dtype)
+            }
+        except ValueError as e:
+            return {
+                'message': f'Conversion error: {str(e)}',
+                'success': False,
+                'error_type': 'value_error'
+            }
         except Exception as e:
-            return {'message': str(e), 'success': False}
+            return {
+                'message': f'Unexpected error: {str(e)}',
+                'success': False,
+                'error_type': 'general_error'
+            }
             
     def get_dataset(self):
         return {
-            'columns': list(self.df.columns),
-            'data': self._prepare_records(self.df)
+            'columns': list(self.preprocessed_df.columns),
+            'data': self._prepare_records(self.preprocessed_df)
         }
         
     def get_column_types(self):
@@ -96,28 +126,26 @@ class Dataset:
             'columns': [
                 {
                     'name': str(col),
-                    'current_type': str(self.df[col].dtype),
-                    'suggested_type': self._suggest_column_type(col)
+                    'current_type': str(self.preprocessed_df[col].dtype)
                 }
-                for col in self.df.columns
+                for col in self.preprocessed_df.columns
             ]
         }
-        
-    def _suggest_column_type(self, column):
-        # Check if column contains only numeric values
+    
+    def get_visualization_data(self, x_column: str, y_column: str = None):
         try:
-            pd.to_numeric(self.df[column].dropna())
-            # Check if all numbers are integers
-            if self.df[column].dropna().apply(float.is_integer).all():
-                return 'int64'
-            return 'float64'
-        except:
-            # Check if column could be datetime
-            try:
-                pd.to_datetime(self.df[column].dropna())
-                return 'datetime'
-            except:
-                # Check if column has low cardinality (few unique values)
-                if self.df[column].nunique() < 10:
-                    return 'category'
-                return 'string'
+            if y_column:
+                data = {
+                    'x': self.preprocessed_df[x_column].tolist(),
+                    'y': self.preprocessed_df[y_column].tolist(),
+                    'x_type': str(self.preprocessed_df[x_column].dtype),
+                    'y_type': str(self.preprocessed_df[y_column].dtype)
+                }
+            else:
+                data = {
+                    'x': self.preprocessed_df[x_column].tolist(),
+                    'x_type': str(self.preprocessed_df[x_column].dtype)
+                }
+            return {'success': True, 'data': data}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}

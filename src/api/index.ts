@@ -41,6 +41,8 @@ export const dataApi = {
   getMissingValues: () => apiCall('/missing'),
   getDataset: () => apiCall('/dataset'),
   getColumnTypes: () => apiCall('/column-types'),
+  getVisualizationData: (xColumn: string, yColumn?: string) => 
+    apiCall(`/visualization-data?x_column=${xColumn}${yColumn ? `&y_column=${yColumn}` : ''}`),
 
   updateColumnType: (column: string, dtype: string) =>
     apiCall('/update-type', {
@@ -48,6 +50,7 @@ export const dataApi = {
       body: JSON.stringify({ column, dtype }),
     }),
 };
+
 
 // Preprocessing API
 export const preprocessApi = {
