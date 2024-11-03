@@ -23,6 +23,9 @@ export function DataTypeCasting() {
   const [dataLoaded, setDataLoaded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const showSearch = columnTypes.length > 3;
+  const showScroll = columnTypes.length > 3;
+
   const fetchColumnTypes = async () => {
     setIsLoading(true);
     setError(null);
@@ -113,18 +116,20 @@ export function DataTypeCasting() {
             </div>
           ) : (
             <>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search columns..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-700 text-white rounded-lg pl-10 pr-4 py-2"
-                />
-              </div>
+              {showSearch && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search columns..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-700 text-white rounded-lg pl-10 pr-4 py-2"
+                  />
+                </div>
+              )}
 
-              <div className="max-h-[400px] overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+              <div className={`space-y-4 ${showScroll ? 'max-h-[400px] overflow-y-auto pr-2' : ''}`}>
                 {filteredColumns.map((column) => (
                   <div key={column.name} className="bg-slate-800 p-4 rounded-lg transform transition-all duration-200 hover:scale-[1.02] hover:bg-slate-700">
                     <div className="flex justify-between items-center mb-3">
