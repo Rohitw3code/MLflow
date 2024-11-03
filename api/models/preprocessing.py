@@ -83,7 +83,6 @@ class DataPreprocessor:
                 features, target,
                 test_size=test_size,
                 random_state=random_state,
-                <boltAction type="file" filePath="api/models/preprocessing.py">                shuffle=shuffle,
                 stratify=stratify_param
             )
             
