@@ -39,6 +39,8 @@ export const dataApi = {
   getDescription: () => apiCall('/describe'),
   getInfo: () => apiCall('/info'),
   getMissingValues: () => apiCall('/missing'),
+  getDataset: () => apiCall('/dataset'),
+  getColumnTypes: () => apiCall('/column-types'),
 
   updateColumnType: (column: string, dtype: string) =>
     apiCall('/update-type', {

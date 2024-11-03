@@ -1,28 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wand2, ChevronDown, ChevronUp } from 'lucide-react';
+import { dataApi } from '../../api';
 
-// Dummy data for data types
-const dummyDataTypes = {
-  Age: { current: 'object', suggested: 'int64' },
-  Income: { current: 'object', suggested: 'float64' },
-  Score: { current: 'object', suggested: 'float64' },
-  Category: { current: 'object', suggested: 'category' },
-};
+interface ColumnType {
+  name: string;
+  current_type: string;
+  suggested_type: string;
+}
 
 export function DataTypeCasting() {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
-  const [selectedTypes, setSelectedTypes] = useState<Record<string, string>>(
-    {}
-  );
+  const [selectedTypes, setSelectedTypes] = useState<Record<string, string>>({});
+  const [columnTypes, setColumnTypes] = useState<ColumnType[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchColumnTypes = async () => {
+      try {
+        const response = await dataApi.getColumnTypes();
+        setColumnTypes(response.columns);
+      } catch (err) {
+        setError('Failed to fetch column types');
+        console.error('Error fetching column types:', err);
+      }
+    };
+
+    if (expanded) {
+      fetchColumnTypes();
+    }
+  }, [expanded]);
 
   const handleTypeCast = async (column: string) => {
     if (!selectedTypes[column]) return;
 
     setProcessing((prev) => ({ ...prev, [column]: true }));
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setProcessing((prev) => ({ ...prev, [column]: false }));
+    setError(null);
+
+    try {
+      const response = await dataApi.updateColumnType(column, selectedTypes[column]);
+      if (!response.success) {
+        throw new Error(response.message);
+      }
+      
+      // Refresh column types after successful update
+      const typesResponse = await dataApi.getColumnTypes();
+      setColumnTypes(typesResponse.columns);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update column type');
+    } finally {
+      setProcessing((prev) => ({ ...prev, [column]: false }));
+    }
   };
 
   return (
@@ -45,38 +73,44 @@ export function DataTypeCasting() {
       </button>
 
       {expanded && (
-        <div className="mt-4 grid grid-cols-1 gap-4">
-          {Object.entries(dummyDataTypes).map(([column, info]) => (
-            <div key={column} className="bg-slate-800 p-4 rounded-lg">
+        <div className="mt-4 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
+          {columnTypes.map((column) => (
+            <div key={column.name} className="bg-slate-800 p-4 rounded-lg">
               <div className="flex justify-between items-center mb-3">
                 <div>
-                  <h4 className="text-white font-medium">{column}</h4>
+                  <h4 className="text-white font-medium">{column.name}</h4>
                   <p className="text-sm text-gray-400">
-                    Current: {info.current}
-                    {info.current !== info.suggested && (
+                    Current: {column.current_type}
+                    {column.current_type !== column.suggested_type && (
                       <span className="text-yellow-500">
                         {' '}
-                        (Suggested: {info.suggested})
+                        (Suggested: {column.suggested_type})
                       </span>
                     )}
                   </p>
                 </div>
-                {info.current !== info.suggested && (
+                {column.current_type !== column.suggested_type && (
                   <Wand2 className="text-yellow-500 w-5 h-5" />
                 )}
               </div>
 
-              {info.current !== info.suggested && (
+              {column.current_type !== column.suggested_type && (
                 <div className="flex flex-wrap gap-3">
                   <select
                     className="flex-1 min-w-[200px] bg-slate-700 text-white rounded-lg px-3 py-2"
                     onChange={(e) => {
                       setSelectedTypes((prev) => ({
                         ...prev,
-                        [column]: e.target.value,
+                        [column.name]: e.target.value,
                       }));
                     }}
-                    value={selectedTypes[column] || ''}
+                    value={selectedTypes[column.name] || ''}
                   >
                     <option value="">Select new data type</option>
                     <option value="int64">Integer (int64)</option>
@@ -87,11 +121,11 @@ export function DataTypeCasting() {
                   </select>
 
                   <button
-                    onClick={() => handleTypeCast(column)}
-                    disabled={processing[column]}
-                    className="flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg min-w-[120px]"
+                    onClick={() => handleTypeCast(column.name)}
+                    disabled={processing[column.name] || !selectedTypes[column.name]}
+                    className="flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {processing[column] ? 'Converting...' : 'Convert Type'}
+                    {processing[column.name] ? 'Converting...' : 'Convert Type'}
                   </button>
                 </div>
               )}

@@ -1,10 +1,8 @@
 import pandas as pd
 import numpy as np
-import os
 
 class Dataset:
     def __init__(self):
-        print(os.getcwd())
         self.df = pd.read_csv('api/data/sample.csv')
     
     def _convert_to_json_serializable(self, value):
@@ -86,3 +84,40 @@ class Dataset:
             return {'message': f'Column {column} type updated to {dtype}', 'success': True}
         except Exception as e:
             return {'message': str(e), 'success': False}
+            
+    def get_dataset(self):
+        return {
+            'columns': list(self.df.columns),
+            'data': self._prepare_records(self.df)
+        }
+        
+    def get_column_types(self):
+        return {
+            'columns': [
+                {
+                    'name': str(col),
+                    'current_type': str(self.df[col].dtype),
+                    'suggested_type': self._suggest_column_type(col)
+                }
+                for col in self.df.columns
+            ]
+        }
+        
+    def _suggest_column_type(self, column):
+        # Check if column contains only numeric values
+        try:
+            pd.to_numeric(self.df[column].dropna())
+            # Check if all numbers are integers
+            if self.df[column].dropna().apply(float.is_integer).all():
+                return 'int64'
+            return 'float64'
+        except:
+            # Check if column could be datetime
+            try:
+                pd.to_datetime(self.df[column].dropna())
+                return 'datetime'
+            except:
+                # Check if column has low cardinality (few unique values)
+                if self.df[column].nunique() < 10:
+                    return 'category'
+                return 'string'

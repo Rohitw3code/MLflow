@@ -60,3 +60,17 @@ class DataController:
             return jsonify(result), 200 if result['success'] else 400
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+            
+    def get_dataset(self):
+        try:
+            data = self.dataset.get_dataset()
+            return jsonify(data), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+            
+    def get_column_types(self):
+        try:
+            types = self.dataset.get_column_types()
+            return jsonify(types), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500

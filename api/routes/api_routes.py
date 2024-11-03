@@ -42,3 +42,11 @@ def update_type():
     if not column or not dtype:
         return {'error': 'Column and dtype are required'}, 400
     return controller.update_column_type(column, dtype)
+
+@api.route('/dataset', methods=['GET'])
+def get_dataset():
+    return controller.get_dataset()
+
+@api.route('/column-types', methods=['GET'])
+def get_column_types():
+    return controller.get_column_types()
