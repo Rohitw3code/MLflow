@@ -3,7 +3,7 @@ from models.dataset import Dataset
 
 class DataController:
     def __init__(self):
-        self.dataset = Dataset()
+        self.dataset = None
         
     def initialize_data(self):
         try:
