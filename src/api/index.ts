@@ -51,9 +51,14 @@ export const dataApi = {
     }),
 };
 
-
 // Preprocessing API
 export const preprocessApi = {
+  getCategoricalColumns: () =>
+    apiCall('/preprocess/categorical-columns'),
+
+  getNumericalColumns: () =>
+    apiCall('/preprocess/numerical-columns'),
+
   handleMissingValues: (column: string, method: string) =>
     apiCall('/preprocess/missing', {
       method: 'POST',
@@ -85,28 +90,15 @@ export const preprocessApi = {
       body: JSON.stringify({ columns, method }),
     }),
 
-  getFeaturesTarget: (features: string[], target: string) =>
-    apiCall('/preprocess/features-target', {
-      method: 'POST',
-      body: JSON.stringify({ features, target }),
-    }),
-
-  splitDataset: (
-    features: string[],
-    target: string,
-    testSize: number,
-    randomState: number,
-    shuffle: boolean
-  ) =>
+  splitDataset: (params: {
+    test_size: number;
+    random_state: number;
+    shuffle: boolean;
+    stratify: boolean;
+  }) =>
     apiCall('/preprocess/split', {
       method: 'POST',
-      body: JSON.stringify({
-        features,
-        target,
-        test_size: testSize,
-        random_state: randomState,
-        shuffle,
-      }),
+      body: JSON.stringify(params),
     }),
 };
 

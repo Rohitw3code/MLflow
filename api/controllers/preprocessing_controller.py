@@ -1,16 +1,45 @@
 from flask import jsonify
+import pandas as pd
+import numpy as np
 from models.preprocessing import DataPreprocessor
-from models.dataset import Dataset
 
 class PreprocessingController:
     def __init__(self, dataset):
         self.dataset = dataset
         self.preprocessor = DataPreprocessor(dataset.df)
     
+    def get_categorical_columns(self):
+        try:
+            categorical_columns = []
+            for column in self.dataset.df.columns:
+                if self.dataset.df[column].dtype == 'object' or pd.api.types.is_categorical_dtype(self.dataset.df[column]):
+                    unique_values = len(self.dataset.df[column].unique())
+                    categorical_columns.append({
+                        'name': column,
+                        'type': str(self.dataset.df[column].dtype),
+                        'uniqueValues': unique_values
+                    })
+            return jsonify({'columns': categorical_columns}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    def get_numerical_columns(self):
+        try:
+            numerical_columns = []
+            for column in self.dataset.df.columns:
+                if pd.api.types.is_numeric_dtype(self.dataset.df[column]):
+                    numerical_columns.append({
+                        'name': column,
+                        'min': float(self.dataset.df[column].min()),
+                        'max': float(self.dataset.df[column].max())
+                    })
+            return jsonify({'columns': numerical_columns}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
     def handle_missing(self, column, method):
         try:
             result = self.preprocessor.handle_missing_values(column, method)
-            # Update the dataset's DataFrame after preprocessing
             self.dataset.df = self.preprocessor.df
             return jsonify(result), 200
         except Exception as e:
@@ -19,7 +48,6 @@ class PreprocessingController:
     def remove_column(self, column):
         try:
             result = self.preprocessor.delete_column(column)
-            # Update the dataset's DataFrame after preprocessing
             self.dataset.df = self.preprocessor.df
             return jsonify(result), 200
         except Exception as e:
@@ -35,7 +63,6 @@ class PreprocessingController:
     def encode_column(self, column, method):
         try:
             result = self.preprocessor.encode_categorical(column, method)
-            # Update the dataset's DataFrame after preprocessing
             self.dataset.df = self.preprocessor.df
             return jsonify(result), 200
         except Exception as e:
@@ -44,23 +71,18 @@ class PreprocessingController:
     def scale_columns(self, columns, method):
         try:
             result = self.preprocessor.scale_features(columns, method)
-            # Update the dataset's DataFrame after preprocessing
             self.dataset.df = self.preprocessor.df
             return jsonify(result), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
-    def get_features_and_target(self, features, target):
-        try:
-            result = self.preprocessor.get_features_target(features, target)
-            return jsonify(result), 200
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
-    
-    def split_dataset(self, features, target, test_size, random_state, shuffle):
+    def split_dataset(self, test_size, random_state, shuffle, stratify):
         try:
             result = self.preprocessor.split_data(
-                features, target, test_size, random_state, shuffle
+                test_size=test_size,
+                random_state=random_state,
+                shuffle=shuffle,
+                stratify=stratify
             )
             return jsonify(result), 200
         except Exception as e:

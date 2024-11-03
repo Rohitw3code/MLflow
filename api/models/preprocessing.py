@@ -1,17 +1,15 @@
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler, Normalizer, QuantileTransformer
 from sklearn.model_selection import train_test_split
 
 class DataPreprocessor:
     def __init__(self, df):
         self.df = df
         self.label_encoders = {}
+        self.scalers = {}
         
     def handle_missing_values(self, column, method='mean'):
-        print("col : ",column)
-        print("method : ",method)
-        print("df : ",self.df[column])
         if method == 'mean':
             value = self.df[column].mean()
         elif method == 'median':
@@ -54,40 +52,64 @@ class DataPreprocessor:
         return {'error': 'Invalid encoding method'}
     
     def scale_features(self, columns, method='standard'):
-        if method == 'standard':
-            scaler = StandardScaler()
-        elif method == 'minmax':
-            scaler = MinMaxScaler()
-        else:
-            return {'error': 'Invalid scaling method'}
+        try:
+            if method == 'standard':
+                scaler = StandardScaler()
+            elif method == 'minmax':
+                scaler = MinMaxScaler()
+            elif method == 'robust':
+                scaler = RobustScaler()
+            elif method == 'normalizer':
+                scaler = Normalizer()
+            elif method == 'quantile':
+                scaler = QuantileTransformer(output_distribution='normal')
+            else:
+                return {'error': 'Invalid scaling method'}
+                
+            self.df[columns] = scaler.fit_transform(self.df[columns])
+            self.scalers[tuple(columns)] = scaler
+            return {'message': f'{method} scaling applied to {columns}'}
+        except Exception as e:
+            return {'error': str(e)}
+    
+    def split_data(self, test_size=0.2, random_state=42, shuffle=True, stratify=False):
+        try:
+            features = self.df.drop(columns=['target']) if 'target' in self.df.columns else self.df
+            target = self.df['target'] if 'target' in self.df.columns else None
             
-        self.df[columns] = scaler.fit_transform(self.df[columns])
-        return {'message': f'{method} scaling applied to {columns}'}
-    
-    def get_features_target(self, features, target):
-        if not all(col in self.df.columns for col in features + [target]):
-            return {'error': 'One or more columns not found'}
-        
-        X = self.df[features]
-        y = self.df[target]
-        return {
-            'features': X.to_dict(orient='records'),
-            'target': y.tolist()
-        }
-    
-    def split_data(self, features, target, test_size=0.2, random_state=42, shuffle=True):
-        X = self.df[features]
-        y = self.df[target]
-        
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=test_size, random_state=random_state, shuffle=shuffle
-        )
-        
-        return {
-            'X_train': X_train.to_dict(orient='records'),
-            'X_test': X_test.to_dict(orient='records'),
-            'y_train': y_train.tolist(),
-            'y_test': y_test.tolist(),
-            'train_size': len(X_train),
-            'test_size': len(X_test)
-        }
+            stratify_param = target if stratify and target is not None else None
+            
+            X_train, X_test, y_train, y_test = train_test_split(
+                features, target,
+                test_size=test_size,
+                random_state=random_state,
+                <boltAction type="file" filePath="api/models/preprocessing.py">                shuffle=shuffle,
+                stratify=stratify_param
+            )
+            
+            return {
+                'X_train': X_train.to_dict(orient='records'),
+                'X_test': X_test.to_dict(orient='records'),
+                'y_train': y_train.tolist() if y_train is not None else None,
+                'y_test': y_test.tolist() if y_test is not None else None,
+                'train_size': len(X_train),
+                'test_size': len(X_test)
+            }
+        except Exception as e:
+            return {'error': str(e)}
+            
+    def get_feature_importance(self, features):
+        try:
+            importance_scores = {}
+            for feature in features:
+                if pd.api.types.is_numeric_dtype(self.df[feature]):
+                    # Calculate correlation with target if exists
+                    if 'target' in self.df.columns:
+                        importance = abs(self.df[feature].corr(self.df['target']))
+                    else:
+                        # Use variance as importance if no target
+                        importance = self.df[feature].var()
+                    importance_scores[feature] = float(importance)
+            return importance_scores
+        except Exception as e:
+            return {'error': str(e)}

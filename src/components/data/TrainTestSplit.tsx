@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Split, ChevronDown, ChevronUp } from 'lucide-react';
+import { preprocessApi } from '../../api';
 
 export function TrainTestSplit() {
   const [splitRatio, setSplitRatio] = useState(0.2);
@@ -7,6 +8,28 @@ export function TrainTestSplit() {
   const [shuffle, setShuffle] = useState(true);
   const [randomState, setRandomState] = useState(42);
   const [expanded, setExpanded] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSplitDataset = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await preprocessApi.splitDataset({
+        test_size: splitRatio,
+        random_state: randomState,
+        shuffle: shuffle,
+        stratify: stratify
+      });
+      
+      // Handle successful split
+      console.log('Dataset split successfully:', response);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to split dataset');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg mb-6">
@@ -27,6 +50,12 @@ export function TrainTestSplit() {
 
       {expanded && (
         <div className="space-y-6 animate-fadeIn">
+          {error && (
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
+              {error}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
@@ -80,9 +109,19 @@ export function TrainTestSplit() {
                 />
               </div>
 
-              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2">
-                <Split className="w-4 h-4" />
-                <span>Split Dataset</span>
+              <button
+                onClick={handleSplitDataset}
+                disabled={isLoading}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              >
+                {isLoading ? (
+                  <span>Splitting Dataset...</span>
+                ) : (
+                  <>
+                    <Split className="w-4 h-4" />
+                    <span>Split Dataset</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -104,5 +143,3 @@ export function TrainTestSplit() {
     </div>
   );
 }
-
-export default TrainTestSplit;

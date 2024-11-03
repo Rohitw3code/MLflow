@@ -4,6 +4,16 @@ from controllers.preprocessing_controller import PreprocessingController
 preprocessing = Blueprint('preprocessing', __name__)
 preprocessing.dataset = None  # Will be set by app.py
 
+@preprocessing.route('/categorical-columns', methods=['GET'])
+def get_categorical_columns():
+    controller = PreprocessingController(preprocessing.dataset)
+    return controller.get_categorical_columns()
+
+@preprocessing.route('/numerical-columns', methods=['GET'])
+def get_numerical_columns():
+    controller = PreprocessingController(preprocessing.dataset)
+    return controller.get_numerical_columns()
+
 @preprocessing.route('/missing', methods=['POST'])
 def handle_missing():
     data = request.get_json()
@@ -57,28 +67,13 @@ def scale_features():
     controller = PreprocessingController(preprocessing.dataset)
     return controller.scale_columns(columns, method)
 
-@preprocessing.route('/features-target', methods=['POST'])
-def get_features_target():
-    data = request.get_json()
-    features = data.get('features', [])
-    target = data.get('target')
-    if not features or not target:
-        return jsonify({'error': 'Features and target are required'}), 400
-        
-    controller = PreprocessingController(preprocessing.dataset)
-    return controller.get_features_and_target(features, target)
-
 @preprocessing.route('/split', methods=['POST'])
-def split_data():
+def split_dataset():
     data = request.get_json()
-    features = data.get('features', [])
-    target = data.get('target')
     test_size = float(data.get('test_size', 0.2))
     random_state = int(data.get('random_state', 42))
     shuffle = bool(data.get('shuffle', True))
-    
-    if not features or not target:
-        return jsonify({'error': 'Features and target are required'}), 400
+    stratify = bool(data.get('stratify', False))
     
     controller = PreprocessingController(preprocessing.dataset)
-    return controller.split_dataset(features, target, test_size, random_state, shuffle)
+    return controller.split_dataset(test_size, random_state, shuffle, stratify)
