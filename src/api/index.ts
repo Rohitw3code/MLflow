@@ -111,7 +111,6 @@ export const preprocessApi = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
-
 };
 
 // Model API

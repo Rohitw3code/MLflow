@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Wand2, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { dataApi, preprocessApi } from '../../api';
+import { preprocessApi } from '../../api';
 
 interface ColumnType {
   name: string;
   current_type: string;
 }
-
-const dummyData = [
-  { name: 'Age', current_type: 'int64' },
-  { name: 'Name', current_type: 'object' },
-  { name: 'Salary', current_type: 'float64' },
-];
 
 export function DataTypeCasting() {
   const [expanded, setExpanded] = useState(false);
@@ -30,12 +24,11 @@ export function DataTypeCasting() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await dataApi.getColumnTypes();
+      const response = await preprocessApi.getColumnTypes();
       setColumnTypes(response.columns);
       setDataLoaded(true);
     } catch (err) {
       setError('Failed to fetch column types');
-      setColumnTypes(dummyData);
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +41,7 @@ export function DataTypeCasting() {
     setError(null);
 
     try {
-      const response = await dataApi.updateColumnType(column, selectedTypes[column]);
+      const response = await preprocessApi.updateColumnType(column, selectedTypes[column]);
       if (!response.success) {
         throw new Error(response.message);
       }
@@ -160,6 +153,7 @@ export function DataTypeCasting() {
                         <option value="string">String</option>
                         <option value="category">Category</option>
                         <option value="datetime">DateTime</option>
+                        <option value="boolean">Boolean</option>
                       </select>
 
                       <button

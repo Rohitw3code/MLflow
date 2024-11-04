@@ -31,16 +31,15 @@ def get_column_types():
     controller = PreprocessingController(preprocessing.dataset)
     return controller.get_column_types()
 
-# @preprocessing.route('/update-type', methods=['GET'])
-# def get_column_types():
-#     data = request.get_json()
-#     column = data.get('column')
-#     dtype = data.get('dtype')
-#     if not column or not dtype:
-#         return {'error': 'Column and dtype are required'}, 400    
-#     controller = PreprocessingController(preprocessing.dataset)
-#     return controller.update_column_type()
-
+@preprocessing.route('/update-type', methods=['POST'])
+def update_column_type():
+    data = request.get_json()
+    column = data.get('column')
+    dtype = data.get('dtype')
+    if not column or not dtype:
+        return jsonify({'error': 'Column and dtype are required'}), 400
+    controller = PreprocessingController(preprocessing.dataset)
+    return controller.update_column_type(column, dtype)
 
 @preprocessing.route('/categorical-columns', methods=['GET'])
 def get_categorical_columns():

@@ -1,10 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Check, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import {
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Search,
+} from 'lucide-react';
 import { dataApi, preprocessApi } from '../../api';
 
 interface MissingValueData {
   column: string;
   missing_count: number;
+  data_type: string;
 }
 
 interface ShapeData {
@@ -13,15 +20,17 @@ interface ShapeData {
 }
 
 const dummyData = [
-  { column: 'Age', missing_count: 10 },
-  { column: 'Salary', missing_count: 15 },
-  { column: 'Department', missing_count: 5 },
+  { column: 'Age', missing_count: 10, data_type: 'int64' },
+  { column: 'Salary', missing_count: 15, data_type: 'float64' },
+  { column: 'Department', missing_count: 5, data_type: 'object' },
 ];
 
 export function MissingValues() {
   const [expanded, setExpanded] = useState(false);
   const [processing, setProcessing] = useState<Record<string, boolean>>({});
-  const [selectedImputations, setSelectedImputations] = useState<Record<string, { method: string }>>({});
+  const [selectedImputations, setSelectedImputations] = useState<
+    Record<string, { method: string }>
+  >({});
   const [missingData, setMissingData] = useState<MissingValueData[]>([]);
   const [totalRows, setTotalRows] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,12 +47,25 @@ export function MissingValues() {
     try {
       const shapeResponse: ShapeData = await preprocessApi.getShape();
       const missingValuesResponse = await preprocessApi.getMissingValues();
+      const columnTypesResponse = await preprocessApi.getColumnTypes();
+
+      const columnTypes = columnTypesResponse.columns.reduce((acc: Record<string, string>, col: any) => {
+        acc[col.name] = col.current_type;
+        return acc;
+      }, {});
 
       setTotalRows(shapeResponse.rows);
-      const filteredMissingValues = missingValuesResponse.data.filter(
+      const missingValuesWithTypes = missingValuesResponse.data.map((item: any) => ({
+        ...item,
+        data_type: columnTypes[item.column] || 'unknown'
+      }));
+
+      const filteredMissingValues = missingValuesWithTypes.filter(
         (item: MissingValueData) => item.missing_count > 0
       );
-      setMissingData(filteredMissingValues.length > 0 ? filteredMissingValues : dummyData);
+      setMissingData(
+        filteredMissingValues.length > 0 ? filteredMissingValues : dummyData
+      );
       setDataLoaded(true);
     } catch (err) {
       setError('Failed to fetch missing values data');
@@ -63,14 +85,16 @@ export function MissingValues() {
       await preprocessApi.handleMissingValues(column, method);
       await fetchMissingData();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to handle missing values');
+      setError(
+        err instanceof Error ? err.message : 'Failed to handle missing values'
+      );
     } finally {
       setProcessing((prev) => ({ ...prev, [column]: false }));
     }
   };
 
-  const filteredData = missingData.filter(
-    (item) => item.column.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredData = missingData.filter((item) =>
+    item.column.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -106,7 +130,9 @@ export function MissingValues() {
           )}
 
           {isLoading ? (
-            <div className="text-center text-gray-400 py-4">Loading missing values data...</div>
+            <div className="text-center text-gray-400 py-4">
+              Loading missing values data...
+            </div>
           ) : !dataLoaded ? (
             <div className="text-center py-4">
               <button
@@ -131,18 +157,27 @@ export function MissingValues() {
                 </div>
               )}
 
-              <div className={`space-y-4 ${showScroll ? 'max-h-[400px] overflow-y-auto pr-2' : ''}`}>
-                {filteredData.map(({ column, missing_count }) => {
-                  const percentage = ((missing_count / totalRows) * 100).toFixed(2);
+              <div
+                className={`space-y-4 ${
+                  showScroll ? 'max-h-[400px] overflow-y-auto pr-2' : ''
+                }`}
+              >
+                {filteredData.map(({ column, missing_count, data_type }) => {
+                  const percentage = (
+                    (missing_count / totalRows) *
+                    100
+                  ).toFixed(2);
 
                   return (
                     <div key={column} className="bg-slate-800 p-4 rounded-lg">
                       <div className="flex justify-between items-center mb-3">
                         <div>
                           <h4 className="text-white font-medium">{column}</h4>
-                          <p className="text-sm text-gray-400">
-                            {missing_count} missing values ({percentage}%)
-                          </p>
+                          <div className="flex items-center space-x-2 text-sm text-gray-400">
+                            <span>{missing_count} missing values ({percentage}%)</span>
+                            <span>•</span>
+                            <span className="text-purple-400">{data_type}</span>
+                          </div>
                         </div>
                         <AlertCircle className="text-yellow-500 w-5 h-5" />
                       </div>
@@ -159,15 +194,21 @@ export function MissingValues() {
                           value={selectedImputations[column]?.method || ''}
                         >
                           <option value="">Select imputation method</option>
-                          <option value="mean">Replace with Mean</option>
-                          <option value="median">Replace with Median</option>
+                          {data_type !== 'object' && (
+                            <>
+                              <option value="mean">Replace with Mean</option>
+                              <option value="median">Replace with Median</option>
+                            </>
+                          )}
                           <option value="mode">Replace with Mode</option>
                           <option value="remove">Remove Rows</option>
                         </select>
 
                         <button
                           onClick={() => handleImputation(column)}
-                          disabled={processing[column] || !selectedImputations[column]}
+                          disabled={
+                            processing[column] || !selectedImputations[column]
+                          }
                           className="flex-none bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center justify-center min-w-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {processing[column] ? (
