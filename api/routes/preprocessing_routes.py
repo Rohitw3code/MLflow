@@ -82,6 +82,16 @@ def get_columns():
     controller = PreprocessingController(preprocessing.dataset)
     return controller.get_columns_data(column1, column2)
 
+@preprocessing.route('/preview-column', methods=['GET'])
+def preview_column():
+    column = request.args.get('column')
+    n = request.args.get('n', default=5, type=int)
+    if not column:
+        return jsonify({'error': 'Column name is required'}), 400
+        
+    controller = PreprocessingController(preprocessing.dataset)
+    return controller.get_column_preview(column, n)
+
 @preprocessing.route('/encode', methods=['POST'])
 def encode_column():
     data = request.get_json()

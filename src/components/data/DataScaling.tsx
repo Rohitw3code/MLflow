@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Scale, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
 interface NumericalColumn {
   name: string;
@@ -40,7 +41,7 @@ export function DataScaling() {
   };
 
   useEffect(() => {
-    if (expanded) {
+    if (expanded && !numericalColumns.length) {
       fetchNumericalColumns();
     }
   }, [expanded]);
@@ -51,7 +52,7 @@ export function DataScaling() {
     setProcessing((prev) => ({ ...prev, [column]: true }));
     try {
       await preprocessApi.scaleFeatures([column], selectedColumns[column].method);
-      await fetchNumericalColumns(); // Refresh the list
+      await fetchNumericalColumns();
     } catch (err) {
       setError('Failed to scale column');
     } finally {
@@ -65,20 +66,23 @@ export function DataScaling() {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center space-x-3"
+        >
           <Scale className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">Feature Scaling</h3>
+        </button>
+        <div className="flex items-center space-x-2">
+          {expanded && <RefreshButton onClick={fetchNumericalColumns} loading={isLoading} />}
+          {expanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="mt-4 space-y-4">
@@ -111,8 +115,7 @@ export function DataScaling() {
                     <div>
                       <h4 className="text-white font-medium">{column.name}</h4>
                       <p className="text-sm text-gray-400">
-                        Range: {column.min.toLocaleString()} -{' '}
-                        {column.max.toLocaleString()}
+                        Range: {column.min.toLocaleString()} - {column.max.toLocaleString()}
                       </p>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, ChevronDown, ChevronUp, Target } from 'lucide-react';
 import { preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
 interface Feature {
   name: string;
@@ -22,8 +23,6 @@ export function FeatureSelection() {
     try {
       const response = await preprocessApi.getNumericalColumns();
       setFeatures(response.columns);
-      
-      // If we have features, select the first one by default
       if (response.columns.length > 0) {
         setSelectedFeatures([response.columns[0].name]);
       }
@@ -35,7 +34,7 @@ export function FeatureSelection() {
   };
 
   useEffect(() => {
-    if (expanded) {
+    if (expanded && !features.length) {
       fetchFeatures();
     }
   }, [expanded]);
@@ -44,7 +43,6 @@ export function FeatureSelection() {
     if (featureName === targetFeature) {
       setTargetFeature('');
     }
-    
     setSelectedFeatures(prev => {
       if (prev.includes(featureName)) {
         return prev.filter(f => f !== featureName);
@@ -62,22 +60,25 @@ export function FeatureSelection() {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg mb-6">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between mb-4"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center space-x-3"
+        >
           <Layers className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">
             Feature Selection
           </h3>
+        </button>
+        <div className="flex items-center space-x-2">
+          {expanded && <RefreshButton onClick={fetchFeatures} loading={isLoading} />}
+          {expanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="space-y-6 animate-fadeIn">

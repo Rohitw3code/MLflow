@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, BarChart2 } from 'lucide-react';
 import { dataApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
 interface DescribeData {
   [key: string]: {
@@ -22,7 +23,7 @@ export function DataSummary() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchDescribeData = async () => {
-    if (!showDescribe || describeData) return;
+    if (loading || (describeData && !showDescribe)) return;
 
     setLoading(true);
     setError(null);
@@ -53,19 +54,27 @@ export function DataSummary() {
         </div>
       )}
 
-      <button
-        onClick={() => setShowDescribe(!showDescribe)}
-        className="w-full bg-slate-800 p-4 rounded-lg flex items-center justify-between hover:bg-slate-700"
-      >
-        <span className="text-white font-medium">
-          Statistical Summary (describe)
-        </span>
-        {showDescribe ? (
-          <ChevronUp className="text-gray-400" />
-        ) : (
-          <ChevronDown className="text-gray-400" />
-        )}
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowDescribe(!showDescribe)}
+          className="flex items-center space-x-3 p-4 bg-slate-800 rounded-lg w-full hover:bg-slate-700"
+        >
+          <BarChart2 className="text-purple-400" />
+          <span className="text-white font-medium">
+            Statistical Summary
+          </span>
+        </button>
+        <div className="flex items-center space-x-2">
+          {showDescribe && (
+            <RefreshButton onClick={fetchDescribeData} loading={loading} />
+          )}
+          {showDescribe ? (
+            <ChevronUp className="text-gray-400" />
+          ) : (
+            <ChevronDown className="text-gray-400" />
+          )}
+        </div>
+      </div>
 
       {showDescribe && describeData && (
         <div className="bg-white/5 p-4 rounded-lg overflow-x-auto">
@@ -89,7 +98,7 @@ export function DataSummary() {
                       <td key={col} className="text-gray-300 px-4 py-2">
                         {typeof describeData[col][metric] === 'number'
                           ? describeData[col][metric].toLocaleString()
-                          : String(describeData[col][metric])} {/* Convert to string */}
+                          : String(describeData[col][metric])}
                       </td>
                     ))}
                   </tr>

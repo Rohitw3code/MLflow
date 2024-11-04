@@ -1,6 +1,11 @@
-import { useState } from 'react';
-import { Split, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Split, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { preprocessApi } from '../../api';
+
+interface Feature {
+  name: string;
+  type: string;
+}
 
 export function TrainTestSplit() {
   const [splitRatio, setSplitRatio] = useState(0.2);
@@ -10,8 +15,34 @@ export function TrainTestSplit() {
   const [expanded, setExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [targetFeature, setTargetFeature] = useState<string>('');
+  const [features, setFeatures] = useState<Feature[]>([]);
+
+  useEffect(() => {
+    const fetchFeatures = async () => {
+      try {
+        const response = await preprocessApi.getColumnTypes();
+        setFeatures(response.columns);
+      } catch (err) {
+        setError('Failed to fetch features');
+      }
+    };
+
+    fetchFeatures();
+  }, []);
 
   const handleSplitDataset = async () => {
+    if (selectedFeatures.length === 0) {
+      setError('Please select features for training in the Feature Selection section above');
+      return;
+    }
+
+    if (!targetFeature) {
+      setError('Please select a target variable in the Feature Selection section above');
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -19,11 +50,17 @@ export function TrainTestSplit() {
         test_size: splitRatio,
         random_state: randomState,
         shuffle: shuffle,
-        stratify: stratify
+        stratify: stratify,
+        features: selectedFeatures,
+        target: targetFeature
       });
       
-      // Handle successful split
-      console.log('Dataset split successfully:', response);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      // Show success message or handle the split data
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to split dataset');
     } finally {
@@ -51,8 +88,9 @@ export function TrainTestSplit() {
       {expanded && (
         <div className="space-y-6 animate-fadeIn">
           {error && (
-            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg">
-              {error}
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg flex items-start space-x-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Hash, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
+// Encoding column and options interfaces
 interface EncodingColumn {
   name: string;
   type: string;
@@ -27,6 +29,7 @@ export function DataEncoding() {
   const showSearch = categoricalColumns.length > 3;
   const showScroll = categoricalColumns.length > 3;
 
+  // Fetch categorical columns
   const fetchCategoricalColumns = async () => {
     setIsLoading(true);
     try {
@@ -39,6 +42,7 @@ export function DataEncoding() {
     }
   };
 
+  // Fetch columns when the panel is expanded
   useEffect(() => {
     if (expanded) {
       fetchCategoricalColumns();
@@ -51,7 +55,7 @@ export function DataEncoding() {
     setProcessing((prev) => ({ ...prev, [column]: true }));
     try {
       await preprocessApi.encodeCategorical(column, selectedColumns[column].method);
-      await fetchCategoricalColumns(); // Refresh the list
+      await fetchCategoricalColumns(); // Refresh the list after encoding
     } catch (err) {
       setError('Failed to encode column');
     } finally {
@@ -65,20 +69,28 @@ export function DataEncoding() {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => {
+            setExpanded(!expanded);
+            if (!categoricalColumns.length) {
+              fetchCategoricalColumns();
+            }
+          }}
+          className="flex items-center space-x-3"
+        >
           <Hash className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">Categorical Encoding</h3>
+        </button>
+        <div className="flex items-center space-x-2">
+          {expanded && <RefreshButton onClick={fetchCategoricalColumns} loading={isLoading} />}
+          {expanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="mt-4 space-y-4">

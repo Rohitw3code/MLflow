@@ -5,8 +5,11 @@ import {
   ChevronDown,
   ChevronUp,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { dataApi, preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
+import { ColumnPreview } from './ColumnPreview';
 
 interface MissingValueData {
   column: string;
@@ -37,6 +40,7 @@ export function MissingValues() {
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [previewData, setPreviewData] = useState<{ column: string; data: any[] } | null>(null);
 
   const showSearch = missingData.length > 3;
   const showScroll = missingData.length > 3;
@@ -93,33 +97,57 @@ export function MissingValues() {
     }
   };
 
+  const handleDeleteColumn = async (column: string) => {
+    setProcessing((prev) => ({ ...prev, [column]: true }));
+    try {
+      await preprocessApi.deleteColumn(column);
+      await fetchMissingData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete column');
+    } finally {
+      setProcessing((prev) => ({ ...prev, [column]: false }));
+    }
+  };
+
+  const handlePreviewColumn = async (column: string) => {
+    try {
+      const response = await preprocessApi.getColumnPreview(column);
+      setPreviewData(response);
+    } catch (err) {
+      setError('Failed to load column preview');
+    }
+  };
+
   const filteredData = missingData.filter((item) =>
     item.column.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
-      <button
-        onClick={() => {
-          setExpanded(!expanded);
-          if (!dataLoaded && !isLoading) {
-            fetchMissingData();
-          }
-        }}
-        className="w-full flex items-center justify-between"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => {
+            setExpanded(!expanded);
+            if (!dataLoaded && !isLoading) {
+              fetchMissingData();
+            }
+          }}
+          className="flex items-center space-x-3"
+        >
           <AlertCircle className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">
             Missing Values Analysis
           </h3>
+        </button>
+        <div className="flex items-center space-x-2">
+          <RefreshButton onClick={fetchMissingData} loading={isLoading} />
+          {expanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
+      </div>
 
       {expanded && (
         <div className="mt-4 space-y-4">
@@ -130,9 +158,7 @@ export function MissingValues() {
           )}
 
           {isLoading ? (
-            <div className="text-center text-gray-400 py-4">
-              Loading missing values data...
-            </div>
+            <div className="text-center text-gray-400 py-4">Loading missing values data...</div>
           ) : !dataLoaded ? (
             <div className="text-center py-4">
               <button
@@ -172,14 +198,28 @@ export function MissingValues() {
                     <div key={column} className="bg-slate-800 p-4 rounded-lg">
                       <div className="flex justify-between items-center mb-3">
                         <div>
-                          <h4 className="text-white font-medium">{column}</h4>
+                          <button
+                            onClick={() => handlePreviewColumn(column)}
+                            className="text-white font-medium hover:text-purple-400 transition-colors"
+                          >
+                            {column}
+                          </button>
                           <div className="flex items-center space-x-2 text-sm text-gray-400">
                             <span>{missing_count} missing values ({percentage}%)</span>
                             <span>•</span>
                             <span className="text-purple-400">{data_type}</span>
                           </div>
                         </div>
-                        <AlertCircle className="text-yellow-500 w-5 h-5" />
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleDeleteColumn(column)}
+                            className="text-gray-400 hover:text-red-400 transition-colors"
+                            title="Delete column"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                          <AlertCircle className="text-yellow-500 w-5 h-5" />
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-3">
@@ -228,6 +268,14 @@ export function MissingValues() {
             </>
           )}
         </div>
+      )}
+
+      {previewData && (
+        <ColumnPreview
+          columnName={previewData.column}
+          data={previewData.data}
+          onClose={() => setPreviewData(null)}
+        />
       )}
     </div>
   );

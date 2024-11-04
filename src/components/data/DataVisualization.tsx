@@ -25,6 +25,7 @@ import {
   Cell
 } from 'recharts';
 import { dataApi, preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#0088fe'];
 
@@ -58,9 +59,9 @@ export function DataVisualization() {
     try {
       const response = await dataApi.getColumnTypes();
       const numericColumns = response.columns
-        .filter((col: ColumnType) => 
-          col.current_type.includes('int') || 
-          col.current_type.includes('float'))
+        .filter((col: ColumnType) =>
+          col.current_type.includes('int') || col.current_type.includes('float')
+        )
         .map((col: ColumnType) => col.name);
       
       setColumns(numericColumns);
@@ -84,12 +85,12 @@ export function DataVisualization() {
         chartConfig.xAxis,
         chartConfig.yAxis
       );
-      
+
       const visualData = response.column1.map((value: any, index: number) => ({
         [chartConfig.xAxis]: value,
         [chartConfig.yAxis!]: response.column2[index],
       }));
-      
+
       setChartData(visualData);
       setDataLoaded(true);
     } catch (err) {
@@ -115,14 +116,14 @@ export function DataVisualization() {
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey={xAxis} stroke="#9CA3AF" />
             <YAxis stroke="#9CA3AF" />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
               labelStyle={{ color: '#9CA3AF' }}
             />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey={yAxis} 
+            <Line
+              type="monotone"
+              dataKey={yAxis}
               stroke="#8B5CF6"
               strokeWidth={2}
               dot={{ fill: '#8B5CF6' }}
@@ -137,13 +138,13 @@ export function DataVisualization() {
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey={xAxis} stroke="#9CA3AF" />
             <YAxis stroke="#9CA3AF" />
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
               labelStyle={{ color: '#9CA3AF' }}
             />
             <Legend />
-            <Bar 
-              dataKey={yAxis} 
+            <Bar
+              dataKey={yAxis}
               fill="#8B5CF6"
               radius={[4, 4, 0, 0]}
             />
@@ -156,15 +157,15 @@ export function DataVisualization() {
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey={xAxis} name={xAxis} stroke="#9CA3AF" />
             <YAxis dataKey={yAxis} name={yAxis} stroke="#9CA3AF" />
-            <Tooltip 
+            <Tooltip
               cursor={{ strokeDasharray: '3 3' }}
               contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
               labelStyle={{ color: '#9CA3AF' }}
             />
             <Legend />
-            <Scatter 
-              name={`${xAxis} vs ${yAxis}`} 
-              data={chartData} 
+            <Scatter
+              name={`${xAxis} vs ${yAxis}`}
+              data={chartData}
               fill="#8B5CF6"
               shape="circle"
             />
@@ -199,13 +200,13 @@ export function DataVisualization() {
               dataKey="value"
             >
               {pieData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
+                <Cell
+                  key={`cell-${index}`}
                   fill={COLORS[index % COLORS.length]}
                 />
               ))}
             </Pie>
-            <Tooltip 
+            <Tooltip
               contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
               labelStyle={{ color: '#9CA3AF' }}
             />
@@ -220,25 +221,21 @@ export function DataVisualization() {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg transform transition-all duration-300">
-      <button
-        onClick={() => {
-          setExpanded(!expanded);
-          if (!dataLoaded && !isLoading) {
-            loadColumnTypes();
-          }
-        }}
-        className="w-full flex items-center justify-between mb-4"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => {
+            setExpanded(!expanded);
+            if (!dataLoaded && !isLoading) {
+              loadColumnTypes();
+            }
+          }}
+          className="flex items-center space-x-3"
+        >
           <BarChart2 className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">Data Visualization</h3>
-        </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
+        </button>
+        <RefreshButton onClick={fetchVisualizationData} />
+      </div>
 
       {expanded && (
         <div className="space-y-6 animate-fadeIn">
@@ -274,64 +271,44 @@ export function DataVisualization() {
                     {type === 'bar' && <BarChart2 className="w-6 h-6 text-purple-400" />}
                     {type === 'pie' && <PieChartIcon className="w-6 h-6 text-purple-400" />}
                     {type === 'scatter' && <Activity className="w-6 h-6 text-purple-400" />}
-                    <span className="text-gray-300 capitalize">{type} Chart</span>
+                    <span className="capitalize text-white text-sm">{type} chart</span>
                   </button>
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-300">
-                    X-Axis
-                  </label>
-                  <select
-                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 transition-colors hover:bg-slate-600"
-                    value={chartConfig.xAxis}
-                    onChange={(e) =>
-                      setChartConfig({ ...chartConfig, xAxis: e.target.value })
-                    }
-                  >
-                    <option value="">Select column</option>
-                    {columns.map((column) => (
-                      <option key={column} value={column}>
-                        {column}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <select
+                  value={chartConfig.xAxis}
+                  onChange={(e) => setChartConfig({ ...chartConfig, xAxis: e.target.value })}
+                  className="bg-slate-900 text-white p-2 rounded-lg"
+                >
+                  <option value="">Select X-Axis</option>
+                  {columns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-300">
-                    Y-Axis
-                  </label>
-                  <select
-                    className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 transition-colors hover:bg-slate-600"
-                    value={chartConfig.yAxis}
-                    onChange={(e) =>
-                      setChartConfig({ ...chartConfig, yAxis: e.target.value })
-                    }
-                  >
-                    <option value="">Select column</option>
-                    {columns.map((column) => (
-                      <option key={column} value={column}>
-                        {column}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <select
+                  value={chartConfig.yAxis}
+                  onChange={(e) => setChartConfig({ ...chartConfig, yAxis: e.target.value })}
+                  className="bg-slate-900 text-white p-2 rounded-lg"
+                >
+                  <option value="">Select Y-Axis</option>
+                  {columns.map((col) => (
+                    <option key={col} value={col}>
+                      {col}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {isLoading ? (
-                <div className="text-center text-gray-400 py-4">Loading chart data...</div>
-              ) : (
-                chartData.length > 0 && (
-                  <div className="bg-slate-800 p-4 rounded-lg transform transition-all duration-300 hover:bg-slate-700" style={{ height: '400px' }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      {renderChart()}
-                    </ResponsiveContainer>
-                  </div>
-                )
-              )}
+              <div className="w-full h-96 mt-8 bg-slate-900 rounded-lg p-4 animate-fadeIn">
+                <ResponsiveContainer width="100%" height="100%">
+                  {renderChart()}
+                </ResponsiveContainer>
+              </div>
             </>
           )}
         </div>

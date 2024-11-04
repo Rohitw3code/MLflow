@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wand2, ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { preprocessApi } from '../../api';
+import { RefreshButton } from '../RefreshButton';
 
 interface ColumnType {
   name: string;
@@ -66,28 +67,30 @@ export function DataTypeCasting() {
 
   return (
     <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg">
-      <button
-        onClick={() => {
-          setExpanded(!expanded);
-          if (!dataLoaded && !isLoading) {
-            fetchColumnTypes();
-          }
-        }}
-        className="w-full flex items-center justify-between"
-      >
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => {
+            setExpanded(!expanded);
+            if (!dataLoaded && !isLoading) {
+              fetchColumnTypes();
+            }
+          }}
+          className="flex items-center space-x-3"
+        >
           <Wand2 className="w-5 h-5 text-purple-400" />
           <h3 className="text-lg font-semibold text-white">
             Data Type Conversion
           </h3>
+        </button>
+        <div className="flex items-center space-x-2">
+          {expanded && <RefreshButton onClick={fetchColumnTypes} loading={isLoading} />}
+          {expanded ? (
+            <ChevronUp className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          )}
         </div>
-        {expanded ? (
-          <ChevronUp className="w-5 h-5 text-gray-400" />
-        ) : (
-          <ChevronDown className="w-5 h-5 text-gray-400" />
-        )}
-      </button>
-
+      </div>
       {expanded && (
         <div className="mt-4 space-y-4">
           {error && (

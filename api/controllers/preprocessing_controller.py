@@ -75,6 +75,15 @@ class PreprocessingController:
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
+    def get_column_preview(self, column, n=5):
+        try:
+            preview_data = self.preprocessor.df[column].head(n).tolist()
+            return jsonify({
+                'column': column,
+                'data': preview_data
+            }), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
             
     def get_categorical_columns(self):
         try:
