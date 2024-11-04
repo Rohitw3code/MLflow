@@ -41,7 +41,7 @@ export const dataApi = {
   getMissingValues: () => apiCall('/missing'),
   getDataset: () => apiCall('/dataset'),
   getColumnTypes: () => apiCall('/column-types'),
-  getVisualizationData: (xColumn: string, yColumn?: string) => 
+  getVisualizationData: (xColumn: string, yColumn?: string) =>
     apiCall(`/visualization-data?x_column=${xColumn}${yColumn ? `&y_column=${yColumn}` : ''}`),
 
   updateColumnType: (column: string, dtype: string) =>
@@ -53,6 +53,12 @@ export const dataApi = {
 
 // Preprocessing API
 export const preprocessApi = {
+  getHead: (n = 5) => apiCall(`/preprocess/head?n=${n}`),
+  getTail: (n = 5) => apiCall(`/preprocess/tail?n=${n}`),
+  getShape: () => apiCall('/preprocess/shape'),
+  getMissingValues: () => apiCall('/preprocess/missing'),
+  getColumnTypes: () => apiCall('/preprocess/column-types'),
+
   getCategoricalColumns: () =>
     apiCall('/preprocess/categorical-columns'),
 
@@ -60,9 +66,15 @@ export const preprocessApi = {
     apiCall('/preprocess/numerical-columns'),
 
   handleMissingValues: (column: string, method: string) =>
-    apiCall('/preprocess/missing', {
+    apiCall('/preprocess/handle-missing-values', {
       method: 'POST',
       body: JSON.stringify({ column, method }),
+    }),
+
+  updateColumnType: (column: string, dtype: string) =>
+    apiCall('/preprocess/update-type', {
+      method: 'POST',
+      body: JSON.stringify({ column, dtype }),
     }),
 
   deleteColumn: (column: string) =>
@@ -73,8 +85,7 @@ export const preprocessApi = {
 
   getColumnValues: (column1: string, column2?: string) =>
     apiCall(
-      `/preprocess/get-columns?column1=${column1}${
-        column2 ? `&column2=${column2}` : ''
+      `/preprocess/get-columns?column1=${column1}${column2 ? `&column2=${column2}` : ''
       }`
     ),
 
@@ -100,6 +111,7 @@ export const preprocessApi = {
       method: 'POST',
       body: JSON.stringify(params),
     }),
+
 };
 
 // Model API

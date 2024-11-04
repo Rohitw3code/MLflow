@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Check, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { dataApi } from '../../api';
-import { preprocessApi } from '../../api';
+import { dataApi, preprocessApi } from '../../api';
 
 interface MissingValueData {
   column: string;
@@ -37,8 +36,8 @@ export function MissingValues() {
     setIsLoading(true);
     setError(null);
     try {
-      const shapeResponse: ShapeData = await dataApi.getShape();
-      const missingValuesResponse = await dataApi.getMissingValues();
+      const shapeResponse: ShapeData = await preprocessApi.getShape();
+      const missingValuesResponse = await preprocessApi.getMissingValues();
 
       setTotalRows(shapeResponse.rows);
       const filteredMissingValues = missingValuesResponse.data.filter(

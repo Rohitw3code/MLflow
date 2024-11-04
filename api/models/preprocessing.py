@@ -3,12 +3,83 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler, RobustScaler, Normalizer, QuantileTransformer
 from sklearn.model_selection import train_test_split
 
+
 class DataPreprocessor:
     def __init__(self, df):
         self.df = df
         self.label_encoders = {}
         self.scalers = {}
-        
+
+    def get_head(self, n=5):
+        head_data = self.df.head(n)
+        return {
+            'columns': list(head_data.columns),
+            'data': self._prepare_records(head_data)
+        }
+
+    def get_tail(self, n=5):
+        tail_data = self.df.tail(n)
+        return {
+            'columns': list(tail_data.columns),
+            'data': self._prepare_records(tail_data)
+        }
+
+    def get_shape(self):
+        return {'rows': int(self.df.shape[0]), 'columns': int(self.df.shape[1])}
+
+    def missing_values(self, column):
+        missing_data = self.df.isna().sum()
+        return {
+            'columns': list(missing_data.index),
+            'data': [
+                {
+                    'column': str(col),
+                    'missing_count': int(count)
+                }
+                for col, count in missing_data.items()
+            ]
+        }
+
+    def update_column_type(self, column, dtype):
+        try:
+            if dtype == 'int64':
+                # First convert to float to handle any NaN values
+                self.preprocessed_df[column] = pd.to_numeric(
+                    self.preprocessed_df[column], errors='raise')
+                # Then convert to int if all values are whole numbers
+                if self.preprocessed_df[column].dropna().apply(float.is_integer).all():
+                    self.preprocessed_df[column] = self.preprocessed_df[column].astype(
+                        'Int64')  # nullable integer type
+                else:
+                    raise ValueError("Column contains non-integer values")
+            elif dtype == 'float64':
+                self.preprocessed_df[column] = pd.to_numeric(
+                    self.preprocessed_df[column], errors='raise')
+            elif dtype == 'datetime':
+                self.preprocessed_df[column] = pd.to_datetime(
+                    self.preprocessed_df[column], errors='raise')
+            else:
+                self.preprocessed_df[column] = self.preprocessed_df[column].astype(
+                    dtype)
+
+            return {
+                'message': f'Column {column} type updated to {dtype}',
+                'success': True,
+                'new_type': str(self.preprocessed_df[column].dtype)
+            }
+        except ValueError as e:
+            return {
+                'message': f'Conversion error: {str(e)}',
+                'success': False,
+                'error_type': 'value_error'
+            }
+        except Exception as e:
+            return {
+                'message': f'Unexpected error: {str(e)}',
+                'success': False,
+                'error_type': 'general_error'
+            }
+
     def handle_missing_values(self, column, method='mean'):
         if method == 'mean':
             value = self.df[column].mean()
@@ -19,17 +90,17 @@ class DataPreprocessor:
         elif method == 'remove':
             self.df.dropna(subset=[column], inplace=True)
             return {'message': f'Rows with NaN in {column} removed'}
-        
+
         if method != 'remove':
             self.df[column].fillna(value, inplace=True)
         return {'message': f'Missing values in {column} handled using {method}'}
-    
+
     def delete_column(self, column):
         if column in self.df.columns:
             self.df.drop(columns=[column], inplace=True)
             return {'message': f'Column {column} deleted successfully'}
         return {'error': f'Column {column} not found'}
-    
+
     def get_column_values(self, column1, column2=None):
         if column2:
             return {
@@ -37,7 +108,7 @@ class DataPreprocessor:
                 'column2': self.df[column2].tolist()
             }
         return {'values': self.df[column1].tolist()}
-    
+
     def encode_categorical(self, column, method='label'):
         if method == 'label':
             le = LabelEncoder()
@@ -50,7 +121,7 @@ class DataPreprocessor:
             self.df.drop(columns=[column], inplace=True)
             return {'message': f'One-hot encoding applied to {column}'}
         return {'error': 'Invalid encoding method'}
-    
+
     def scale_features(self, columns, method='standard'):
         try:
             if method == 'standard':
@@ -65,27 +136,28 @@ class DataPreprocessor:
                 scaler = QuantileTransformer(output_distribution='normal')
             else:
                 return {'error': 'Invalid scaling method'}
-                
+
             self.df[columns] = scaler.fit_transform(self.df[columns])
             self.scalers[tuple(columns)] = scaler
             return {'message': f'{method} scaling applied to {columns}'}
         except Exception as e:
             return {'error': str(e)}
-    
+
     def split_data(self, test_size=0.2, random_state=42, shuffle=True, stratify=False):
         try:
-            features = self.df.drop(columns=['target']) if 'target' in self.df.columns else self.df
+            features = self.df.drop(
+                columns=['target']) if 'target' in self.df.columns else self.df
             target = self.df['target'] if 'target' in self.df.columns else None
-            
+
             stratify_param = target if stratify and target is not None else None
-            
+
             X_train, X_test, y_train, y_test = train_test_split(
                 features, target,
                 test_size=test_size,
                 random_state=random_state,
                 stratify=stratify_param
             )
-            
+
             return {
                 'X_train': X_train.to_dict(orient='records'),
                 'X_test': X_test.to_dict(orient='records'),
@@ -96,7 +168,7 @@ class DataPreprocessor:
             }
         except Exception as e:
             return {'error': str(e)}
-            
+
     def get_feature_importance(self, features):
         try:
             importance_scores = {}
@@ -104,7 +176,8 @@ class DataPreprocessor:
                 if pd.api.types.is_numeric_dtype(self.df[feature]):
                     # Calculate correlation with target if exists
                     if 'target' in self.df.columns:
-                        importance = abs(self.df[feature].corr(self.df['target']))
+                        importance = abs(
+                            self.df[feature].corr(self.df['target']))
                     else:
                         # Use variance as importance if no target
                         importance = self.df[feature].var()

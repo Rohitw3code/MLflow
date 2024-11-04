@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wand2, ChevronDown, ChevronUp, Search } from 'lucide-react';
-import { dataApi } from '../../api';
+import { dataApi, preprocessApi } from '../../api';
 
 interface ColumnType {
   name: string;
