@@ -145,35 +145,35 @@ class DataPreprocessor:
             return {'error': str(e)}
 
     def split_data(self, test_size=0.2, random_state=42, shuffle=True, stratify=False, features=None, target=None):
-        # try:
-        if features is None or target is None:
-            raise ValueError("Features and target must be specified")
+        try:
+            if features is None or target is None:
+                raise ValueError("Features and target must be specified")
 
-        X = self.df[features]
-        y = self.df[target]
+            X = self.df[features]
+            y = self.df[target]
 
-        stratify_param = y if stratify else None
+            stratify_param = y if stratify else None
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y,
-            test_size=test_size,
-            random_state=random_state,
-            shuffle=shuffle,
-            stratify=stratify_param
-        )
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y,
+                test_size=test_size,
+                random_state=random_state,
+                shuffle=shuffle,
+                stratify=stratify_param
+            )
 
-        return {
-            'X_train': X_train.to_dict('records'),
-            'X_test': X_test.to_dict('records'),
-            'y_train': y_train.tolist(),
-            'y_test': y_test.tolist(),
-            'train_size': len(X_train),
-            'test_size': len(X_test),
-            'features': features,
-            'target': target
-        }
-        # except Exception as e:
-        #     raise ValueError(f"Error splitting dataset: {str(e)}")
+            return {
+                'X_train': X_train.to_dict('records'),
+                'X_test': X_test.to_dict('records'),
+                'y_train': y_train.tolist(),
+                'y_test': y_test.tolist(),
+                'train_size': len(X_train),
+                'test_size': len(X_test),
+                'features': features,
+                'target': target
+            }
+        except Exception as e:
+            raise ValueError(f"Error splitting dataset: {str(e)}")
 
     def get_feature_importance(self, features):
         try:

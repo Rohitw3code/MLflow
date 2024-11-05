@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { Split, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { Split, ChevronDown, ChevronUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { preprocessApi } from '../../api';
 import { useFeatures } from '../../Context/FeatureContext';
-
-interface Feature {
-  name: string;
-  type: string;
-}
 
 export function TrainTestSplit() {
   const [splitRatio, setSplitRatio] = useState(0.2);
@@ -16,6 +11,8 @@ export function TrainTestSplit() {
   const [expanded, setExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [splitInfo, setSplitInfo] = useState<any>(null);
 
   const { selectedFeatures, targetFeature } = useFeatures();
 
@@ -32,8 +29,8 @@ export function TrainTestSplit() {
 
     setIsLoading(true);
     setError(null);
+    setSuccess(false);
     try {
-      console.log("feature : "+selectedFeatures+"  target : "+targetFeature);
       const response = await preprocessApi.splitDataset({
         test_size: splitRatio,
         random_state: randomState,
@@ -47,13 +44,16 @@ export function TrainTestSplit() {
         throw new Error(response.error);
       }
 
+      setSplitInfo(response);
+      setSuccess(true);
       window.dispatchEvent(new CustomEvent('console-message', {
-        detail: `Dataset split successfully - Training: ${((1 - splitRatio) * 100).toFixed(0)}%, Test: ${(splitRatio * 100).toFixed(0)}%`
+        detail: `Dataset split successfully - Training: ${response.train_size} samples, Test: ${response.test_size} samples`
       }));
 
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to split dataset');
+      setSuccess(false);
     } finally {
       setIsLoading(false);
     }
@@ -167,6 +167,20 @@ export function TrainTestSplit() {
               />
             </div>
           </div>
+
+          {success && splitInfo && (
+            <div className="mt-4 bg-green-500/10 text-green-400 p-4 rounded-lg flex items-start space-x-2">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p>Dataset split successfully!</p>
+                <p className="text-sm">
+                  Training set: {splitInfo.train_size} samples ({((1 - splitRatio) * 100).toFixed(1)}%)
+                  <br />
+                  Test set: {splitInfo.test_size} samples ({(splitRatio * 100).toFixed(1)}%)
+                </p>
+              </div>
+            </div>
+          )}
 
           {selectedFeatures.length > 0 && targetFeature && (
             <div className="bg-slate-800 p-4 rounded-lg space-y-4">

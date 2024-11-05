@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
+import { useFeatures } from '../../Context/FeatureContext';
+import { modelApi } from '../../api';
 
 // Extended model types with more algorithms
 const modelTypes = {
@@ -116,15 +118,15 @@ const evaluationMetrics = {
 };
 
 export function ModelTraining() {
-  const [predictionType, setPredictionType] = useState<
-    'classification' | 'regression'
-  >('classification');
-  const [selectedModel, setSelectedModel] = useState('');
   const [expanded, setExpanded] = useState(true);
-  const [isTraining, setIsTraining] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [modelTrained, setModelTrained] = useState(false);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [predictionType, setPredictionType] = useState<'classification' | 'regression'>('classification');
+  const [trainingProgress, setTrainingProgress] = useState(0);
+  const [isTraining, setIsTraining] = useState(false);
+  const { selectedFeatures, targetFeature } = useFeatures();
 
   const filteredModels = modelTypes[predictionType].filter(
     (model) =>
@@ -132,15 +134,54 @@ export function ModelTraining() {
       model.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleTrain = async () => {
+  const simulateTraining = async () => {
     setIsTraining(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    setTrainingProgress(0);
+    
+    const steps = [15, 35, 55, 75, 90, 100];
+    const messages = [
+      'Initializing model...',
+      'Loading training data...',
+      'Training model...',
+      'Optimizing parameters...',
+      'Validating model...',
+      'Training complete!'
+    ];
+
+    for (let i = 0; i < steps.length; i++) {
+      setTrainingProgress(steps[i]);
+      window.dispatchEvent(new CustomEvent('console-message', {
+        detail: messages[i]
+      }));
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+
     setIsTraining(false);
     setModelTrained(true);
   };
 
+  const handleTrain = async () => {
+    if (!selectedModel || !selectedFeatures.length || !targetFeature) return;
+
+    try {
+      // Initialize model
+      await modelApi.initializeModel(
+        selectedModel.toLowerCase().replace(/\s+/g, '_'),
+        predictionType,
+        {}
+      );
+
+      await simulateTraining();
+
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent('console-message', {
+        detail: `Error training model: ${error}`
+      }));
+      setIsTraining(false);
+    }
+  };
+
   const handleDownload = () => {
-    // Simulate model download
     const element = document.createElement('a');
     element.setAttribute(
       'href',
@@ -248,46 +289,26 @@ export function ModelTraining() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h4 className="text-white font-medium">Evaluation Metrics</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {evaluationMetrics[predictionType].map((metric) => (
-                <label
-                  key={metric.name}
-                  className="flex items-center space-x-2 bg-slate-800 p-3 rounded-lg cursor-pointer hover:bg-slate-700"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedMetrics.includes(metric.name)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedMetrics([...selectedMetrics, metric.name]);
-                      } else {
-                        setSelectedMetrics(
-                          selectedMetrics.filter((m) => m !== metric.name)
-                        );
-                      }
-                    }}
-                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                  />
-                  <div>
-                    <span className="text-gray-300">{metric.name}</span>
-                    <p className="text-xs text-gray-400">
-                      {metric.description}
-                    </p>
-                  </div>
-                </label>
-              ))}
+          {isTraining && (
+            <div className="bg-slate-800 p-4 rounded-lg">
+              <div className="flex justify-between text-sm text-gray-400 mb-2">
+                <span>Training Progress</span>
+                <span>{trainingProgress}%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${trainingProgress}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex space-x-4">
             <button
               onClick={handleTrain}
-              disabled={!selectedModel || isTraining}
-              className={`flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-2 ${
-                isTraining ? 'opacity-75 cursor-not-allowed' : ''
-              }`}
+              disabled={!selectedModel || isTraining || !selectedFeatures.length || !targetFeature}
+              className={`flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg transition-all transform hover:scale-105 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isTraining ? (
                 <>

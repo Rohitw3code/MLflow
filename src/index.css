@@ -153,3 +153,12 @@ html {
 .hover\:scale-102:hover {
   transform: scale(1.02);
 }
+
+.fixed.right-6.bottom-32 {
+  bottom: 10rem; /* Increased bottom spacing */
+}
+
+/* Update floating action button spacing */
+.fixed.right-6.bottom-6 {
+  bottom: 1.5rem;
+}
