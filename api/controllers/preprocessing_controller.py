@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 import pandas as pd
 import numpy as np
 from models.preprocessing import DataPreprocessor
@@ -69,11 +69,31 @@ class PreprocessingController:
         
     def update_column_type(self, column, dtype):
         try:
-            result = self.preprocessor.update_column_type(column, dtype)
-            self.dataset.preprocessed_df = self.preprocessor.df
-            return jsonify(result), 200
+            df = self.preprocessor.df
+            if dtype == 'int64':
+                df[column] = df[column].map(lambda x: int(float(x)) if pd.notnull(x) else None)
+            elif dtype == 'float64':
+                df[column] = df[column].map(lambda x: float(x) if pd.notnull(x) else None)
+            elif dtype == 'str':
+                df[column] = df[column].map(lambda x: str(x) if pd.notnull(x) else None)
+            elif dtype == 'bool':
+                df[column] = df[column].map(lambda x: bool(x) if pd.notnull(x) else None)
+            elif dtype == 'datetime':
+                df[column] = pd.to_datetime(df[column], errors='coerce')
+            
+            self.preprocessor.df = df
+            self.dataset.preprocessed_df = df
+            
+            return jsonify({
+                'success': True,
+                'message': f'Column {column} converted to {dtype}',
+                'new_type': str(df[column].dtype)
+            }), 200
         except Exception as e:
-            return jsonify({'error': str(e)}), 500
+            return jsonify({
+                'success': False,
+                'error': str(e)
+            }), 500
 
     def get_column_preview(self, column, n=5):
         try:
@@ -131,9 +151,29 @@ class PreprocessingController:
             return jsonify({'error': str(e)}), 500
     
     def get_columns_data(self, column1, column2=None):
-        print("get column data")
         try:
-            data = self.preprocessor.get_column_values(column1, column2)
+            start_idx = request.args.get('start_idx', default=0, type=int)
+            end_idx = request.args.get('end_idx', type=int)
+            
+            df = self.preprocessor.df
+            if end_idx is not None:
+                df = df.iloc[start_idx:end_idx]
+            else:
+                df = df.iloc[start_idx:]
+            
+            if column2:
+                data = {
+                    'column1_data': df[column1].tolist(),
+                    'column2_data': df[column2].tolist(),
+                    'total_rows': len(self.preprocessor.df),
+                    'selected_rows': len(df)
+                }
+            else:
+                data = {
+                    'column1_data': df[column1].tolist(),
+                    'total_rows': len(self.preprocessor.df),
+                    'selected_rows': len(df)
+                }
             return jsonify(data), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
