@@ -118,8 +118,8 @@ export const preprocessApi = {
     random_state: number;
     shuffle: boolean;
     stratify: boolean;
-    features:string[];
-    target:string[];
+    features: string[];
+    target: string[];
   }) =>
     apiCall('/preprocess/split', {
       method: 'POST',
@@ -143,7 +143,7 @@ export const modelApi = {
       }),
     }),
 
-  trainModel: (XTrain: number[][], yTrain: number[],selectedFeatures: string[]) =>
+  trainModel: (XTrain: number[][], yTrain: number[], selectedFeatures: string[]) =>
     apiCall('/model/train', {
       method: 'POST',
       body: JSON.stringify({
@@ -153,19 +153,21 @@ export const modelApi = {
       }),
     }),
 
-  evaluateModel: (XTest: number[][], yTest: number[],selectedFeatures:string[]) =>
+  evaluateModel: (XTest: number[][], yTest: number[], selectedFeatures: string[]) =>
     apiCall('/model/evaluate', {
       method: 'POST',
       body: JSON.stringify({
         X_test: XTest,
         y_test: yTest,
-        features:selectedFeatures
+        features: selectedFeatures
       }),
     }),
 
-  predict: (features: number[][]) =>
+  predict: (features: number[][], selectedFeatures: string[]) =>
     apiCall('/model/predict', {
       method: 'POST',
-      body: JSON.stringify({ features }),
+      body: JSON.stringify({ 
+        features:features, 
+        feature_names: selectedFeatures }),
     }),
 };

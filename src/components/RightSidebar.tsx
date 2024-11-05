@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { ChevronLeft, Table, ChevronDown, ChevronUp, Save, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Table, ChevronDown, ChevronUp, Save, Download, RefreshCw } from 'lucide-react';
+import { preprocessApi } from '../api';
 
 interface RightSidebarProps {
   isOpen: boolean;
@@ -9,32 +10,62 @@ interface RightSidebarProps {
 export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
   const [showHead, setShowHead] = useState(true);
   const [rowsToShow, setRowsToShow] = useState(5);
+  const [data, setData] = useState<any[]>([]);
+  const [columns, setColumns] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Dummy data
-  const dummyData = {
-    columns: ['Age', 'Income', 'Score', 'Category'],
-    data: Array.from({ length: 100 }, (_, i) => ({
-      Age: Math.floor(Math.random() * 50) + 20,
-      Income: Math.floor(Math.random() * 100000) + 30000,
-      Score: Math.floor(Math.random() * 100),
-      Category: ['A', 'B', 'C'][Math.floor(Math.random() * 3)],
-    })),
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await (showHead 
+        ? preprocessApi.getHead(rowsToShow)
+        : preprocessApi.getTail(rowsToShow));
+      
+      setData(response.data);
+      setColumns(response.columns);
+    } catch (err) {
+      setError('Failed to fetch data');
+      console.error('Error fetching data:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSaveProject = () => {
-    // Implement save project logic
-    console.log('Saving project...');
+  useEffect(() => {
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen, showHead, rowsToShow]);
+
+  const formatCellValue = (value: any): string => {
+    if (value === null || value === undefined || value === '') {
+      return 'N/A';
+    }
+    if (typeof value === 'number') {
+      if (isNaN(value)) return 'N/A';
+      if (Number.isInteger(value)) return value.toString();
+      return value.toFixed(4);
+    }
+    return value.toString();
   };
 
   const handleDownloadData = () => {
-    // Create CSV content
-    const headers = dummyData.columns.join(',');
-    const rows = dummyData.data.map(row => 
-      dummyData.columns.map(col => row[col]).join(',')
+    if (!data.length) return;
+
+    const headers = columns.join(',');
+    const rows = data.map(row => 
+      columns.map(col => {
+        const value = row[col];
+        if (value === null || value === undefined || (typeof value === 'number' && isNaN(value))) {
+          return '';
+        }
+        return value;
+      }).join(',')
     ).join('\n');
     const csvContent = `${headers}\n${rows}`;
 
-    // Create and trigger download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -60,18 +91,20 @@ export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={handleSaveProject}
-              className="text-gray-400 hover:text-white transition-colors p-2"
-              title="Save Project"
-            >
-              <Save className="w-5 h-5" />
-            </button>
-            <button
               onClick={handleDownloadData}
               className="text-gray-400 hover:text-white transition-colors p-2"
               title="Download Preprocessed Data"
+              disabled={!data.length}
             >
               <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={fetchData}
+              className="text-gray-400 hover:text-white transition-colors p-2"
+              title="Refresh Data"
+              disabled={isLoading}
+            >
+              <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
             <button
               onClick={onClose}
@@ -115,30 +148,44 @@ export function RightSidebar({ isOpen, onClose }: RightSidebarProps) {
             </select>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-700">
-                <tr>
-                  {dummyData.columns.map((col) => (
-                    <th key={col} className="px-4 py-2 text-purple-400">
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(showHead ? dummyData.data.slice(0, rowsToShow) : dummyData.data.slice(-rowsToShow)).map((row, i) => (
-                  <tr key={i} className="border-b border-gray-700">
-                    {dummyData.columns.map((col) => (
-                      <td key={col} className="px-4 py-2 text-gray-300">
-                        {row[col]}
-                      </td>
+          {error ? (
+            <div className="text-red-400 bg-red-400/10 p-3 rounded-lg">
+              {error}
+            </div>
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+          ) : data.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-700">
+                  <tr>
+                    {columns.map((col) => (
+                      <th key={col} className="px-4 py-2 text-purple-400 whitespace-nowrap">
+                        {col}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.map((row, i) => (
+                    <tr key={i} className="border-b border-gray-700">
+                      {columns.map((col) => (
+                        <td key={col} className="px-4 py-2 text-gray-300 whitespace-nowrap">
+                          {formatCellValue(row[col])}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-gray-400 text-center py-8">
+              No data available
+            </div>
+          )}
         </div>
       </div>
     </div>

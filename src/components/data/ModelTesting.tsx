@@ -59,13 +59,13 @@ export function ModelTesting() {
         splitData.y_test,
         splitData.features
       );
-      
+
       if (response.error) {
         throw new Error(response.error);
       }
 
       setMetrics(response.metrics);
-      
+
       if (response.metrics.predictions && response.metrics.actual) {
         const vizData = response.metrics.predictions.map((pred: number, i: number) => ({
           id: i + 1,
@@ -77,11 +77,10 @@ export function ModelTesting() {
       }
 
       window.dispatchEvent(new CustomEvent('console-message', {
-        detail: `Model evaluation complete. ${
-          response.metrics.accuracy 
+        detail: `Model evaluation complete. ${response.metrics.accuracy
             ? `Accuracy: ${(response.metrics.accuracy * 100).toFixed(2)}%`
             : `R² Score: ${response.metrics.r2?.toFixed(3)}`
-        }`
+          }`
       }));
 
     } catch (err) {
@@ -109,11 +108,10 @@ export function ModelTesting() {
           row.map((value, j) => (
             <div
               key={`${i}-${j}`}
-              className={`p-4 rounded-lg text-center ${
-                i === j
+              className={`p-4 rounded-lg text-center ${i === j
                   ? 'bg-green-500/20 text-green-400'
                   : 'bg-red-500/20 text-red-400'
-              }`}
+                }`}
             >
               <span className="text-lg font-bold">{value}</span>
               <br />
@@ -246,28 +244,28 @@ export function ModelTesting() {
                       <ResponsiveContainer width="100%" height="100%">
                         <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                          <XAxis 
-                            dataKey="actual" 
-                            name="Actual" 
+                          <XAxis
+                            dataKey="actual"
+                            name="Actual"
                             type="number"
                             stroke="#9CA3AF"
                           >
-                            <Label 
-                              value="Actual Values" 
-                              position="bottom" 
+                            <Label
+                              value="Actual Values"
+                              position="bottom"
                               offset={40}
                               style={{ fill: '#9CA3AF' }}
                             />
                           </XAxis>
-                          <YAxis 
-                            dataKey="predicted" 
-                            name="Predicted" 
+                          <YAxis
+                            dataKey="predicted"
+                            name="Predicted"
                             type="number"
                             stroke="#9CA3AF"
                           >
-                            <Label 
-                              value="Predicted Values" 
-                              angle={-90} 
+                            <Label
+                              value="Predicted Values"
+                              angle={-90}
                               position="left"
                               offset={40}
                               style={{ fill: '#9CA3AF' }}
@@ -275,19 +273,23 @@ export function ModelTesting() {
                           </YAxis>
                           <Tooltip content={<CustomTooltip />} />
                           <Legend verticalAlign="top" height={36} />
-                          <Scatter 
-                            name="Predictions" 
-                            data={predictionData} 
+                          <Scatter
+                            name="Predictions"
+                            data={predictionData}
                             fill="#8884d8"
                           />
                           <Line
                             name="Perfect Prediction"
                             type="monotone"
                             data={[
-                              { actual: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted))), 
-                                predicted: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted))) },
-                              { actual: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted))), 
-                                predicted: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted))) }
+                              {
+                                actual: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted))),
+                                predicted: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted)))
+                              },
+                              {
+                                actual: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted))),
+                                predicted: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted)))
+                              }
                             ]}
                             dataKey="predicted"
                             stroke="#FF0000"
@@ -305,28 +307,28 @@ export function ModelTesting() {
                       <ResponsiveContainer width="100%" height="100%">
                         <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                          <XAxis 
-                            dataKey="predicted" 
-                            name="Predicted" 
+                          <XAxis
+                            dataKey="predicted"
+                            name="Predicted"
                             type="number"
                             stroke="#9CA3AF"
                           >
-                            <Label 
-                              value="Predicted Values" 
-                              position="bottom" 
+                            <Label
+                              value="Predicted Values"
+                              position="bottom"
                               offset={40}
                               style={{ fill: '#9CA3AF' }}
                             />
                           </XAxis>
-                          <YAxis 
-                            dataKey="residual" 
-                            name="Residual" 
+                          <YAxis
+                            dataKey="residual"
+                            name="Residual"
                             type="number"
                             stroke="#9CA3AF"
                           >
-                            <Label 
-                              value="Residuals" 
-                              angle={-90} 
+                            <Label
+                              value="Residuals"
+                              angle={-90}
                               position="left"
                               offset={40}
                               style={{ fill: '#9CA3AF' }}
@@ -334,9 +336,9 @@ export function ModelTesting() {
                           </YAxis>
                           <Tooltip content={<CustomTooltip />} />
                           <Legend verticalAlign="top" height={36} />
-                          <Scatter 
-                            name="Residuals" 
-                            data={predictionData} 
+                          <Scatter
+                            name="Residuals"
+                            data={predictionData}
                             fill="#82ca9d"
                           />
                           <Line

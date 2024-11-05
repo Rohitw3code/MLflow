@@ -10,6 +10,22 @@ class DataPreprocessor:
         self.label_encoders = {}
         self.scalers = {}
 
+    def _convert_to_json_serializable(self, value):
+        if pd.isna(value):
+            return None
+        if isinstance(value, (np.int64, np.int32, np.int16, np.int8)):
+            return int(value)
+        if isinstance(value, (np.float64, np.float32, np.float16)):
+            return float(value)
+        if isinstance(value, np.bool_):
+            return bool(value)
+        return value
+
+    def _prepare_records(self, df):
+        records = df.to_dict('records')
+        return [{k: self._convert_to_json_serializable(v) for k, v in record.items()} 
+                for record in records]
+
     def get_head(self, n=5):
         head_data = self.df.head(n)
         return {
