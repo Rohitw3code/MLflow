@@ -1,6 +1,6 @@
 import { API_CONFIG } from '../config/api';
 
-// Generic API call function with error handling
+// Generic API call function with error handling and console messages
 async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
   try {
     const response = await fetch(`${API_CONFIG.baseURL}${endpoint}`, {
@@ -11,13 +11,25 @@ async function apiCall<T>(endpoint: string, options?: RequestInit): Promise<T> {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+    const data = await response.json();
+
+    // Check for message in response for logging
+    if (data.message) {
+      window.dispatchEvent(new CustomEvent('console-message', {
+        detail: data.message
+      }));
     }
 
-    return response.json();
+    if (!response.ok) {
+      throw new Error(data.error || `API Error: ${response.statusText}`);
+    }
+
+    return data;
   } catch (error) {
-    console.error('API Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    window.dispatchEvent(new CustomEvent('console-message', {
+      detail: `Error: ${errorMessage}`
+    }));
     throw error;
   }
 }

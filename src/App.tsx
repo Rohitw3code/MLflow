@@ -2,7 +2,6 @@ import React from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { Features } from './components/Features';
-import { Footer } from './components/Footer';
 import { SideNav } from './components/SideNav';
 import { DashboardNav } from './components/DashboardNav';
 import { Dashboard } from './components/Dashboard';
@@ -11,6 +10,7 @@ import { SideNavProvider } from './Context/SideNavContext';
 import { RightSidebar } from './components/RightSidebar';
 import { FloatingButton } from './components/FloatingButton';
 import { CustomCursor } from './components/CustomCursor';
+import { ConsoleMessages } from './components/ConsoleMessages';
 
 export function App() {
   const [showDashboard, setShowDashboard] = React.useState(false);
@@ -51,6 +51,7 @@ export function App() {
               />
             </div>
             <FloatingButton onClick={() => setShowRightSidebar(!showRightSidebar)} />
+            <ConsoleMessages />
           </>
         ) : (
           <>
@@ -59,7 +60,6 @@ export function App() {
               <Hero onStartClick={handleStartClick} />
               <Features />
             </main>
-            <Footer />
           </>
         )}
       </div>
