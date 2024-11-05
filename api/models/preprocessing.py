@@ -44,28 +44,28 @@ class DataPreprocessor:
         try:
             if dtype == 'int64':
                 # First convert to float to handle any NaN values
-                self.preprocessed_df[column] = pd.to_numeric(
-                    self.preprocessed_df[column], errors='raise')
+                self.df[column] = pd.to_numeric(
+                    self.df[column], errors='raise')
                 # Then convert to int if all values are whole numbers
-                if self.preprocessed_df[column].dropna().apply(float.is_integer).all():
-                    self.preprocessed_df[column] = self.preprocessed_df[column].astype(
+                if self.df[column].dropna().apply(float.is_integer).all():
+                    self.df[column] = self.df[column].astype(
                         'Int64')  # nullable integer type
                 else:
                     raise ValueError("Column contains non-integer values")
             elif dtype == 'float64':
-                self.preprocessed_df[column] = pd.to_numeric(
-                    self.preprocessed_df[column], errors='raise')
+                self.df[column] = pd.to_numeric(
+                    self.df[column], errors='raise')
             elif dtype == 'datetime':
-                self.preprocessed_df[column] = pd.to_datetime(
-                    self.preprocessed_df[column], errors='raise')
+                self.df[column] = pd.to_datetime(
+                    self.df[column], errors='raise')
             else:
-                self.preprocessed_df[column] = self.preprocessed_df[column].astype(
+                self.df[column] = self.df[column].astype(
                     dtype)
 
             return {
                 'message': f'Column {column} type updated to {dtype}',
                 'success': True,
-                'new_type': str(self.preprocessed_df[column].dtype)
+                'new_type': str(self.df[column].dtype)
             }
         except ValueError as e:
             return {
@@ -102,6 +102,7 @@ class DataPreprocessor:
         return {'error': f'Column {column} not found'}
 
     def get_column_values(self, column1, column2=None):
+        print("colum ",column1,column2)
         if column2:
             return {
                 'column1': self.df[column1].tolist(),

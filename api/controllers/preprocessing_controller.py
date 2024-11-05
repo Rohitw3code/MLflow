@@ -131,6 +131,7 @@ class PreprocessingController:
             return jsonify({'error': str(e)}), 500
     
     def get_columns_data(self, column1, column2=None):
+        print("get column data")
         try:
             data = self.preprocessor.get_column_values(column1, column2)
             return jsonify(data), 200
