@@ -143,21 +143,23 @@ export const modelApi = {
       }),
     }),
 
-  trainModel: (XTrain: number[][], yTrain: number[]) =>
+  trainModel: (XTrain: number[][], yTrain: number[],selectedFeatures: string[]) =>
     apiCall('/model/train', {
       method: 'POST',
       body: JSON.stringify({
         X_train: XTrain,
         y_train: yTrain,
+        features: selectedFeatures
       }),
     }),
 
-  evaluateModel: (XTest: number[][], yTest: number[]) =>
+  evaluateModel: (XTest: number[][], yTest: number[],selectedFeatures:string[]) =>
     apiCall('/model/evaluate', {
       method: 'POST',
       body: JSON.stringify({
         X_test: XTest,
         y_test: yTest,
+        features:selectedFeatures
       }),
     }),
 

@@ -18,22 +18,36 @@ class ModelController:
     
     def train_model(self, X_train, y_train):
         try:
-            # Convert lists to numpy arrays
+            # Convert inputs to numpy arrays
             X_train_arr = np.array(X_train)
             y_train_arr = np.array(y_train)
             
             self.ml_model.train(X_train_arr, y_train_arr)
-            return jsonify({'message': 'Model trained successfully'}), 200
+            
+            return jsonify({
+                'message': 'Model trained successfully',
+                'training_samples': len(X_train),
+                'features_shape': X_train_arr.shape[1]
+            }), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
     def evaluate_model(self, X_test, y_test):
         try:
-            # Convert lists to numpy arrays
+            # Convert inputs to numpy arrays
             X_test_arr = np.array(X_test)
             y_test_arr = np.array(y_test)
             
+            # Get predictions for visualization
+            predictions = self.ml_model.predict(X_test_arr)
+            
+            # Calculate metrics
             metrics = self.ml_model.evaluate(X_test_arr, y_test_arr)
+            
+            # Add predictions and actual values to metrics
+            metrics['predictions'] = predictions
+            metrics['actual'] = y_test_arr.tolist()
+            
             return jsonify({'metrics': metrics}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -46,6 +60,9 @@ class ModelController:
                 features_arr = features_arr.reshape(1, -1)
                 
             predictions = self.ml_model.predict(features_arr)
-            return jsonify({'predictions': predictions}), 200
+            return jsonify({
+                'predictions': predictions,
+                'samples_predicted': len(predictions)
+            }), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500

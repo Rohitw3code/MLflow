@@ -44,6 +44,16 @@ export function TrainTestSplit() {
         throw new Error(response.error);
       }
 
+      // Save split data to localStorage
+      localStorage.setItem('splitData', JSON.stringify({
+        X_train: response.X_train,
+        X_test: response.X_test,
+        y_train: response.y_train,
+        y_test: response.y_test,
+        features: response.features,
+        target: response.target
+      }));
+
       setSplitInfo(response);
       setSuccess(true);
       window.dispatchEvent(new CustomEvent('console-message', {

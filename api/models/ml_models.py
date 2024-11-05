@@ -46,8 +46,12 @@ class MLModel:
     def train(self, X_train, y_train):
         if self.model is None:
             raise ValueError("Model not initialized. Call get_model first.")
-        
+
+        print("Model : ",self.model)        
+        print("X_train => ",X_train)
+        print("y_train => ",y_train)
         self.model.fit(X_train, y_train)
+        print("model trained")
         return True
     
     def predict(self, X):

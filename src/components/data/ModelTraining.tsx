@@ -7,113 +7,23 @@ import {
   Binary,
   ChevronDown,
   ChevronUp,
+  AlertCircle,
 } from 'lucide-react';
 import { useFeatures } from '../../Context/FeatureContext';
 import { modelApi } from '../../api';
 
-// Extended model types with more algorithms
 const modelTypes = {
   classification: [
-    {
-      name: 'Random Forest',
-      accuracy: '94%',
-      training_time: 'Fast',
-      type: 'ensemble',
-    },
-    {
-      name: 'Gradient Boosting',
-      accuracy: '96%',
-      training_time: 'Medium',
-      type: 'ensemble',
-    },
-    { name: 'SVM', accuracy: '92%', training_time: 'Slow', type: 'kernel' },
-    {
-      name: 'Neural Network',
-      accuracy: '95%',
-      training_time: 'Very Slow',
-      type: 'deep',
-    },
-    {
-      name: 'Decision Tree',
-      accuracy: '89%',
-      training_time: 'Very Fast',
-      type: 'tree',
-    },
-    { name: 'KNN', accuracy: '88%', training_time: 'Fast', type: 'instance' },
-    {
-      name: 'Naive Bayes',
-      accuracy: '87%',
-      training_time: 'Very Fast',
-      type: 'probabilistic',
-    },
-    {
-      name: 'XGBoost',
-      accuracy: '97%',
-      training_time: 'Medium',
-      type: 'ensemble',
-    },
+    { name: 'Logistic Regression', type: 'Classification', accuracy: '85%', training_time: '2s', id: 'logistic' },
+    { name: 'Decision Tree', type: 'Classification', accuracy: '82%', training_time: '3s', id: 'decision_tree' },
+    { name: 'Random Forest', type: 'Classification', accuracy: '88%', training_time: '5s', id: 'random_forest' },
+    { name: 'SVM', type: 'Classification', accuracy: '86%', training_time: '4s', id: 'svm' },
   ],
   regression: [
-    {
-      name: 'Linear Regression',
-      r2_score: '0.89',
-      training_time: 'Very Fast',
-      type: 'linear',
-    },
-    {
-      name: 'Random Forest',
-      r2_score: '0.93',
-      training_time: 'Fast',
-      type: 'ensemble',
-    },
-    {
-      name: 'XGBoost',
-      r2_score: '0.95',
-      training_time: 'Medium',
-      type: 'ensemble',
-    },
-    {
-      name: 'Neural Network',
-      r2_score: '0.94',
-      training_time: 'Slow',
-      type: 'deep',
-    },
-    { name: 'SVR', r2_score: '0.91', training_time: 'Medium', type: 'kernel' },
-    {
-      name: 'Elastic Net',
-      r2_score: '0.88',
-      training_time: 'Fast',
-      type: 'linear',
-    },
-    { name: 'Lasso', r2_score: '0.87', training_time: 'Fast', type: 'linear' },
-    { name: 'Ridge', r2_score: '0.86', training_time: 'Fast', type: 'linear' },
-  ],
-};
-
-// Metrics for model evaluation
-const evaluationMetrics = {
-  classification: [
-    { name: 'Accuracy', description: 'Overall correctness of predictions' },
-    {
-      name: 'Precision',
-      description: 'Ratio of true positives to predicted positives',
-    },
-    {
-      name: 'Recall',
-      description: 'Ratio of true positives to actual positives',
-    },
-    { name: 'F1 Score', description: 'Harmonic mean of precision and recall' },
-    { name: 'ROC AUC', description: 'Area under ROC curve' },
-  ],
-  regression: [
-    {
-      name: 'R² Score',
-      description: 'Proportion of variance explained by the model',
-    },
-    { name: 'MSE', description: 'Mean squared error' },
-    { name: 'RMSE', description: 'Root mean squared error' },
-    { name: 'MAE', description: 'Mean absolute error' },
-    { name: 'MAPE', description: 'Mean absolute percentage error' },
+    { name: 'Linear Regression', type: 'Regression', r2_score: '0.78', training_time: '2s', id: 'linear' },
+    { name: 'Decision Tree', type: 'Regression', r2_score: '0.75', training_time: '3s', id: 'decision_tree' },
+    { name: 'Random Forest', type: 'Regression', r2_score: '0.82', training_time: '5s', id: 'random_forest' },
+    { name: 'SVR', type: 'Regression', r2_score: '0.80', training_time: '4s', id: 'svm' },
   ],
 };
 
@@ -122,11 +32,11 @@ export function ModelTraining() {
   const [selectedModel, setSelectedModel] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [modelTrained, setModelTrained] = useState(false);
-  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [predictionType, setPredictionType] = useState<'classification' | 'regression'>('classification');
-  const [trainingProgress, setTrainingProgress] = useState(0);
   const [isTraining, setIsTraining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { selectedFeatures, targetFeature } = useFeatures();
+  const [trainedModelData, setTrainedModelData] = useState<any>(null);
 
   const filteredModels = modelTypes[predictionType].filter(
     (model) =>
@@ -134,64 +44,94 @@ export function ModelTraining() {
       model.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const simulateTraining = async () => {
-    setIsTraining(true);
-    setTrainingProgress(0);
-    
-    const steps = [15, 35, 55, 75, 90, 100];
-    const messages = [
-      'Initializing model...',
-      'Loading training data...',
-      'Training model...',
-      'Optimizing parameters...',
-      'Validating model...',
-      'Training complete!'
-    ];
-
-    for (let i = 0; i < steps.length; i++) {
-      setTrainingProgress(steps[i]);
-      window.dispatchEvent(new CustomEvent('console-message', {
-        detail: messages[i]
-      }));
-      await new Promise(resolve => setTimeout(resolve, 800));
+  const handleTrain = async () => {
+    if (!selectedModel || !selectedFeatures.length || !targetFeature) {
+      setError('Please select a model, features, and target variable');
+      return;
     }
 
-    setIsTraining(false);
-    setModelTrained(true);
-  };
-
-  const handleTrain = async () => {
-    if (!selectedModel || !selectedFeatures.length || !targetFeature) return;
+    setIsTraining(true);
+    setError(null);
 
     try {
+      // Get split data from localStorage
+      const splitData = JSON.parse(localStorage.getItem('splitData') || '{}');
+      if (!splitData.X_train || !splitData.y_train) {
+        throw new Error('No training data found. Please split your dataset first.');
+      }
+
       // Initialize model
-      await modelApi.initializeModel(
-        selectedModel.toLowerCase().replace(/\s+/g, '_'),
+      const selectedModelConfig = modelTypes[predictionType].find(m => m.name === selectedModel);
+      if (!selectedModelConfig) {
+        throw new Error('Invalid model selected');
+      }
+
+      const initResponse = await modelApi.initializeModel(
+        selectedModelConfig.id,
         predictionType,
         {}
       );
 
-      await simulateTraining();
+      if (initResponse.error) {
+        throw new Error(initResponse.error);
+      }
+
+      // Train model
+      const trainResponse = await modelApi.trainModel(
+        splitData.X_train,
+        splitData.y_train,
+        selectedFeatures
+      );
+
+      if (trainResponse.error) {
+        throw new Error(trainResponse.error);
+      }
+
+      setTrainedModelData({
+        model_type: predictionType,
+        algorithm: selectedModelConfig.id,
+        features: selectedFeatures,
+        target: targetFeature,
+        training_samples: trainResponse.training_samples,
+        features_shape: trainResponse.features_shape
+      });
+
+      window.dispatchEvent(new CustomEvent('console-message', {
+        detail: `Model trained successfully with ${trainResponse.training_samples} samples and ${trainResponse.features_shape} features`
+      }));
+
+      setModelTrained(true);
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to train model';
+      setError(errorMessage);
       window.dispatchEvent(new CustomEvent('console-message', {
-        detail: `Error training model: ${error}`
+        detail: `Error training model: ${errorMessage}`
       }));
+    } finally {
       setIsTraining(false);
     }
   };
 
   const handleDownload = () => {
-    const element = document.createElement('a');
-    element.setAttribute(
-      'href',
-      'data:text/plain;charset=utf-8,' + encodeURIComponent('Model data')
-    );
-    element.setAttribute('download', `trained_model_${selectedModel}.pkl`);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    if (!trainedModelData) return;
+
+    const modelBlob = new Blob([JSON.stringify(trainedModelData, null, 2)], {
+      type: 'application/json'
+    });
+
+    const url = window.URL.createObjectURL(modelBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `trained_model_${trainedModelData.algorithm}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    window.dispatchEvent(new CustomEvent('console-message', {
+      detail: 'Model downloaded successfully'
+    }));
   };
 
   return (
@@ -213,6 +153,13 @@ export function ModelTraining() {
 
       {expanded && (
         <div className="space-y-6 animate-fadeIn">
+          {error && (
+            <div className="bg-red-500/10 text-red-400 p-4 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h4 className="text-white font-medium">Prediction Type</h4>
@@ -289,21 +236,6 @@ export function ModelTraining() {
             </div>
           </div>
 
-          {isTraining && (
-            <div className="bg-slate-800 p-4 rounded-lg">
-              <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>Training Progress</span>
-                <span>{trainingProgress}%</span>
-              </div>
-              <div className="w-full bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-purple-600 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${trainingProgress}%` }}
-                />
-              </div>
-            </div>
-          )}
-
           <div className="flex space-x-4">
             <button
               onClick={handleTrain}
@@ -323,7 +255,7 @@ export function ModelTraining() {
               )}
             </button>
 
-            {modelTrained && (
+            {modelTrained && trainedModelData && (
               <button
                 onClick={handleDownload}
                 className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-all transform hover:scale-105 flex items-center space-x-2"
@@ -333,6 +265,22 @@ export function ModelTraining() {
               </button>
             )}
           </div>
+
+          {modelTrained && trainedModelData && (
+            <div className="bg-slate-800 p-4 rounded-lg space-y-2">
+              <h4 className="text-white font-medium">Training Summary</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Samples</span>
+                  <p className="text-xl font-bold text-white">{trainedModelData.training_samples}</p>
+                </div>
+                <div className="bg-slate-700 p-3 rounded-lg">
+                  <span className="text-gray-400">Features</span>
+                  <p className="text-xl font-bold text-white">{trainedModelData.features_shape}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
