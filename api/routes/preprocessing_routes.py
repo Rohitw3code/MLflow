@@ -121,6 +121,8 @@ def split_dataset():
     random_state = int(data.get('random_state', 42))
     shuffle = bool(data.get('shuffle', True))
     stratify = bool(data.get('stratify', False))
+    features = data.get('features', [])
+    target = data.get('target', [])
     
     controller = PreprocessingController(preprocessing.dataset)
-    return controller.split_dataset(test_size, random_state, shuffle, stratify)
+    return controller.split_dataset(test_size, random_state, shuffle, stratify,features,target)

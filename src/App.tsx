@@ -7,6 +7,7 @@ import { DashboardNav } from './components/DashboardNav';
 import { Dashboard } from './components/Dashboard';
 import { DataScience } from './Tools/DataScience';
 import { SideNavProvider } from './Context/SideNavContext';
+import { FeatureProvider } from './Context/FeatureContext';
 import { RightSidebar } from './components/RightSidebar';
 import { FloatingButton } from './components/FloatingButton';
 import { CustomCursor } from './components/CustomCursor';
@@ -30,39 +31,41 @@ export function App() {
 
   return (
     <SideNavProvider>
-      <div className={`min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 ${!showDashboard ? 'custom-cursor' : ''}`}>
-        <CustomCursor />
-        {showDashboard ? (
-          <>
-            <DashboardNav
-              onMenuClick={() => setShowMobileMenu(!showMobileMenu)}
-            />
-            <div className="flex justify-around">
-              <SideNav
-                isOpen={showMobileMenu}
-                onClose={() => setShowMobileMenu(false)}
-                onSectionChange={handleSectionChange}
+      <FeatureProvider>
+        <div className={`min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 ${!showDashboard ? 'custom-cursor' : ''}`}>
+          <CustomCursor />
+          {showDashboard ? (
+            <>
+              <DashboardNav
+                onMenuClick={() => setShowMobileMenu(!showMobileMenu)}
               />
-              {activeSection === 'dashboard' && <Dashboard />}
-              {activeSection === 'data-science' && <DataScience />}
-              <RightSidebar 
-                isOpen={showRightSidebar} 
-                onClose={() => setShowRightSidebar(false)} 
-              />
-            </div>
-            <FloatingButton onClick={() => setShowRightSidebar(!showRightSidebar)} />
-            <ConsoleMessages />
-          </>
-        ) : (
-          <>
-            <Navbar onMenuClick={() => setShowMobileMenu(!showMobileMenu)} />
-            <main className="relative">
-              <Hero onStartClick={handleStartClick} />
-              <Features />
-            </main>
-          </>
-        )}
-      </div>
+              <div className="flex justify-around">
+                <SideNav
+                  isOpen={showMobileMenu}
+                  onClose={() => setShowMobileMenu(false)}
+                  onSectionChange={handleSectionChange}
+                />
+                {activeSection === 'dashboard' && <Dashboard />}
+                {activeSection === 'data-science' && <DataScience />}
+                <RightSidebar 
+                  isOpen={showRightSidebar} 
+                  onClose={() => setShowRightSidebar(false)} 
+                />
+              </div>
+              <FloatingButton onClick={() => setShowRightSidebar(!showRightSidebar)} />
+              <ConsoleMessages />
+            </>
+          ) : (
+            <>
+              <Navbar onMenuClick={() => setShowMobileMenu(!showMobileMenu)} />
+              <main className="relative">
+                <Hero onStartClick={handleStartClick} />
+                <Features />
+              </main>
+            </>
+          )}
+        </div>
+      </FeatureProvider>
     </SideNavProvider>
   );
 }

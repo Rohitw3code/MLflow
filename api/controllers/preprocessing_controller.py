@@ -194,13 +194,15 @@ class PreprocessingController:
         except Exception as e:
             return jsonify({'error': str(e)}), 500
     
-    def split_dataset(self, test_size, random_state, shuffle, stratify):
+    def split_dataset(self, test_size, random_state, shuffle, stratify,features,target):
         try:
             result = self.preprocessor.split_data(
                 test_size=test_size,
                 random_state=random_state,
                 shuffle=shuffle,
-                stratify=stratify
+                stratify=stratify,
+                features=features,
+                target=target
             )
             return jsonify(result), 200
         except Exception as e:

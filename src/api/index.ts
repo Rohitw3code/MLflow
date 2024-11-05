@@ -118,6 +118,8 @@ export const preprocessApi = {
     random_state: number;
     shuffle: boolean;
     stratify: boolean;
+    features:string[];
+    target:string[];
   }) =>
     apiCall('/preprocess/split', {
       method: 'POST',

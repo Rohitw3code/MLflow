@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Split, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { preprocessApi } from '../../api';
+import { useFeatures } from '../../Context/FeatureContext';
 
 interface Feature {
   name: string;
@@ -15,22 +16,8 @@ export function TrainTestSplit() {
   const [expanded, setExpanded] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
-  const [targetFeature, setTargetFeature] = useState<string>('');
-  const [features, setFeatures] = useState<Feature[]>([]);
 
-  useEffect(() => {
-    const fetchFeatures = async () => {
-      try {
-        const response = await preprocessApi.getColumnTypes();
-        setFeatures(response.columns);
-      } catch (err) {
-        setError('Failed to fetch features');
-      }
-    };
-
-    fetchFeatures();
-  }, []);
+  const { selectedFeatures, targetFeature } = useFeatures();
 
   const handleSplitDataset = async () => {
     if (selectedFeatures.length === 0) {
@@ -46,6 +33,7 @@ export function TrainTestSplit() {
     setIsLoading(true);
     setError(null);
     try {
+      console.log("feature : "+selectedFeatures+"  target : "+targetFeature);
       const response = await preprocessApi.splitDataset({
         test_size: splitRatio,
         random_state: randomState,
@@ -59,7 +47,10 @@ export function TrainTestSplit() {
         throw new Error(response.error);
       }
 
-      // Show success message or handle the split data
+      window.dispatchEvent(new CustomEvent('console-message', {
+        detail: `Dataset split successfully - Training: ${((1 - splitRatio) * 100).toFixed(0)}%, Test: ${(splitRatio * 100).toFixed(0)}%`
+      }));
+
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to split dataset');
@@ -149,8 +140,8 @@ export function TrainTestSplit() {
 
               <button
                 onClick={handleSplitDataset}
-                disabled={isLoading}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                disabled={isLoading || selectedFeatures.length === 0 || !targetFeature}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <span>Splitting Dataset...</span>
@@ -176,6 +167,30 @@ export function TrainTestSplit() {
               />
             </div>
           </div>
+
+          {selectedFeatures.length > 0 && targetFeature && (
+            <div className="bg-slate-800 p-4 rounded-lg space-y-4">
+              <div>
+                <h4 className="text-white font-medium mb-2">Selected Features</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedFeatures.map((feature) => (
+                    <span
+                      key={feature}
+                      className="bg-purple-600/20 text-purple-400 px-3 py-1 rounded-full text-sm"
+                    >
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-white font-medium mb-2">Target Variable</h4>
+                <span className="bg-green-600/20 text-green-400 px-3 py-1 rounded-full text-sm">
+                  {targetFeature}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
