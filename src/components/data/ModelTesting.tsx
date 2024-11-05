@@ -20,6 +20,7 @@ import {
   ResponsiveContainer,
   ScatterChart,
   Scatter,
+  Label,
 } from 'recharts';
 import { modelApi } from '../../api';
 
@@ -48,7 +49,6 @@ export function ModelTesting() {
     setIsLoading(true);
     setError(null);
     try {
-      // Get split data from localStorage
       const splitData = JSON.parse(localStorage.getItem('splitData') || '{}');
       if (!splitData.X_test || !splitData.y_test) {
         throw new Error('No test data found. Please split your dataset first.');
@@ -66,7 +66,6 @@ export function ModelTesting() {
 
       setMetrics(response.metrics);
       
-      // Create prediction vs actual data for visualization
       if (response.metrics.predictions && response.metrics.actual) {
         const vizData = response.metrics.predictions.map((pred: number, i: number) => ({
           id: i + 1,
@@ -126,6 +125,20 @@ export function ModelTesting() {
         )}
       </div>
     );
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-slate-800 p-3 rounded-lg border border-slate-700">
+          <p className="text-purple-400">ID: {label}</p>
+          <p className="text-green-400">Actual: {payload[0].payload.actual.toFixed(3)}</p>
+          <p className="text-blue-400">Predicted: {payload[0].payload.predicted.toFixed(3)}</p>
+          <p className="text-gray-400">Difference: {(payload[0].payload.actual - payload[0].payload.predicted).toFixed(3)}</p>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -231,39 +244,55 @@ export function ModelTesting() {
                     <h4 className="text-white font-medium mb-4">Predicted vs Actual Values</h4>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                        <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                           <XAxis 
                             dataKey="actual" 
                             name="Actual" 
                             type="number"
-                            label={{ value: 'Actual Values', position: 'bottom', fill: '#9CA3AF' }}
-                          />
+                            stroke="#9CA3AF"
+                          >
+                            <Label 
+                              value="Actual Values" 
+                              position="bottom" 
+                              offset={40}
+                              style={{ fill: '#9CA3AF' }}
+                            />
+                          </XAxis>
                           <YAxis 
                             dataKey="predicted" 
                             name="Predicted" 
                             type="number"
-                            label={{ value: 'Predicted Values', angle: -90, position: 'left', fill: '#9CA3AF' }}
+                            stroke="#9CA3AF"
+                          >
+                            <Label 
+                              value="Predicted Values" 
+                              angle={-90} 
+                              position="left"
+                              offset={40}
+                              style={{ fill: '#9CA3AF' }}
+                            />
+                          </YAxis>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend verticalAlign="top" height={36} />
+                          <Scatter 
+                            name="Predictions" 
+                            data={predictionData} 
+                            fill="#8884d8"
                           />
-                          <Tooltip 
-                            cursor={{ strokeDasharray: '3 3' }}
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                          />
-                          <Legend />
-                          <Scatter name="Predictions" data={predictionData} fill="#8884d8" />
                           <Line
+                            name="Perfect Prediction"
                             type="monotone"
-                            dataKey="actual"
                             data={[
-                              { actual: Math.min(...predictionData.map(d => d.actual)), predicted: Math.min(...predictionData.map(d => d.actual)) },
-                              { actual: Math.max(...predictionData.map(d => d.actual)), predicted: Math.max(...predictionData.map(d => d.actual)) }
+                              { actual: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted))), 
+                                predicted: Math.min(...predictionData.map(d => Math.min(d.actual, d.predicted))) },
+                              { actual: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted))), 
+                                predicted: Math.max(...predictionData.map(d => Math.max(d.actual, d.predicted))) }
                             ]}
+                            dataKey="predicted"
                             stroke="#FF0000"
                             strokeDasharray="5 5"
                             dot={false}
-                            activeDot={false}
-                            name="Perfect Prediction"
                           />
                         </ScatterChart>
                       </ResponsiveContainer>
@@ -274,38 +303,53 @@ export function ModelTesting() {
                     <h4 className="text-white font-medium mb-4">Residual Plot</h4>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <CartesianGrid strokeDasharray="3 3" />
+                        <ScatterChart margin={{ top: 20, right: 30, bottom: 60, left: 60 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                           <XAxis 
                             dataKey="predicted" 
                             name="Predicted" 
                             type="number"
-                            label={{ value: 'Predicted Values', position: 'bottom', fill: '#9CA3AF' }}
-                          />
+                            stroke="#9CA3AF"
+                          >
+                            <Label 
+                              value="Predicted Values" 
+                              position="bottom" 
+                              offset={40}
+                              style={{ fill: '#9CA3AF' }}
+                            />
+                          </XAxis>
                           <YAxis 
                             dataKey="residual" 
                             name="Residual" 
                             type="number"
-                            label={{ value: 'Residuals', angle: -90, position: 'left', fill: '#9CA3AF' }}
+                            stroke="#9CA3AF"
+                          >
+                            <Label 
+                              value="Residuals" 
+                              angle={-90} 
+                              position="left"
+                              offset={40}
+                              style={{ fill: '#9CA3AF' }}
+                            />
+                          </YAxis>
+                          <Tooltip content={<CustomTooltip />} />
+                          <Legend verticalAlign="top" height={36} />
+                          <Scatter 
+                            name="Residuals" 
+                            data={predictionData} 
+                            fill="#82ca9d"
                           />
-                          <Tooltip 
-                            cursor={{ strokeDasharray: '3 3' }}
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none' }}
-                            labelStyle={{ color: '#9CA3AF' }}
-                          />
-                          <Legend />
-                          <Scatter name="Residuals" data={predictionData} fill="#82ca9d" />
                           <Line
+                            name="Zero Line"
                             type="monotone"
                             data={[
                               { predicted: Math.min(...predictionData.map(d => d.predicted)), residual: 0 },
                               { predicted: Math.max(...predictionData.map(d => d.predicted)), residual: 0 }
                             ]}
+                            dataKey="residual"
                             stroke="#FF0000"
                             strokeDasharray="5 5"
                             dot={false}
-                            activeDot={false}
-                            name="Zero Line"
                           />
                         </ScatterChart>
                       </ResponsiveContainer>
