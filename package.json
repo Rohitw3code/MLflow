@@ -15,10 +15,13 @@
     "react-dom": "^18.3.1",
     "recharts": "^2.12.2",
     "@radix-ui/react-dialog": "^1.0.5",
-    "@radix-ui/react-select": "^2.0.0"
+    "@radix-ui/react-select": "^2.0.0",
+    "groq-sdk": "^0.3.1",
+    "prismjs": "^1.29.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
+    "@eslint/js": "^9.9.1", 
+    "@types/prismjs": "^1.26.3",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",

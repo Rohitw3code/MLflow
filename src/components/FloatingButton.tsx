@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, BarChart2, X, Save, Download } from 'lucide-react';
+import { Table, BarChart2, X, Save, Download, Code2 } from 'lucide-react';
 import { DataPreview } from './data/DataPreview';
 
 interface FloatingButtonProps {
@@ -60,22 +60,13 @@ export function FloatingButton({ onClick }: FloatingButtonProps) {
 
   return (
     <>
-      <div className="fixed right-6 bottom-6 flex flex-col space-y-2">
-        <button
-          onClick={() => setShowVisualization(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
-          title="Data Visualization"
-        >
-          <BarChart2 className="w-6 h-6" />
-        </button>
-        <button
-          onClick={onClick}
-          className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
-          title="Data Preview"
-        >
-          <Table className="w-6 h-6" />
-        </button>
-      </div>
+      <button
+        onClick={onClick}
+        className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110"
+        title="Data Preview"
+      >
+        <Table className="w-6 h-6" />
+      </button>
 
       {showVisualization && (
         <DataPreview
