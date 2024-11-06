@@ -32,7 +32,6 @@ export function DataUpload({ onDataLoaded, setIsLoading }: DataUploadProps) {
     
     try {
       const response = await dataApi.loadDataset(file);
-      // Extract columns from the first data item
       const columns = response.data && response.data.length > 0 
         ? Object.keys(response.data[0]) 
         : [];
@@ -46,8 +45,8 @@ export function DataUpload({ onDataLoaded, setIsLoading }: DataUploadProps) {
   };
 
   return (
-    <div className="bg-white/5 backdrop-blur-lg p-6 rounded-lg mb-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white/5 backdrop-blur-lg p-4 sm:p-6 rounded-lg mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
         <h3 className="text-lg font-semibold text-white">Upload Dataset</h3>
         {success && (
           <div className="flex items-center text-green-400">
@@ -58,12 +57,12 @@ export function DataUpload({ onDataLoaded, setIsLoading }: DataUploadProps) {
         {error && (
           <div className="flex items-center text-red-400">
             <AlertCircle size={16} className="mr-1" />
-            <span>{error}</span>
+            <span className="text-sm">{error}</span>
           </div>
         )}
       </div>
 
-      <div className="border-2 border-dashed border-gray-700 rounded-lg p-6 text-center">
+      <div className="border-2 border-dashed border-gray-700 rounded-lg p-4 sm:p-6 text-center">
         <input
           type="file"
           accept=".csv,.xlsx,.xls"
@@ -76,10 +75,10 @@ export function DataUpload({ onDataLoaded, setIsLoading }: DataUploadProps) {
           className="cursor-pointer flex flex-col items-center"
         >
           <Upload className="w-12 h-12 text-purple-400 mb-2" />
-          <p className="text-gray-300 mb-2">
+          <p className="text-gray-300 mb-2 text-sm sm:text-base">
             Drag and drop or click to upload CSV or Excel file
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-400">
             Supported formats: .csv, .xlsx, .xls
           </p>
         </label>
@@ -87,14 +86,16 @@ export function DataUpload({ onDataLoaded, setIsLoading }: DataUploadProps) {
 
       {file && (
         <div className="mt-4">
-          <div className="flex items-center justify-between bg-slate-800 p-3 rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-800 p-3 rounded-lg space-y-2 sm:space-y-0">
             <div className="flex items-center">
               <FileUp className="w-5 h-5 text-purple-400 mr-2" />
-              <span className="text-gray-300">{file.name}</span>
+              <span className="text-gray-300 text-sm truncate max-w-[200px] sm:max-w-none">
+                {file.name}
+              </span>
             </div>
             <button
               onClick={handleUpload}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-1 rounded-lg flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white px-4 py-1 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Load Dataset
             </button>

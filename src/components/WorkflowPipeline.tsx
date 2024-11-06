@@ -10,6 +10,7 @@ import {
   PlayCircle,
   ChevronLeft,
   ChevronRight,
+  Menu,
 } from 'lucide-react';
 import { useSideNav } from '../Context/SideNavContext';
 
@@ -126,12 +127,12 @@ function WorkflowStepComponent({
           >
             {title}
           </h3>
-          <p className="text-xs text-gray-400">{description}</p>
+          <p className="text-xs text-gray-400 hidden md:block">{description}</p>
         </div>
       </button>
 
       {!isLast && (
-        <div className="absolute left-7 top-12 bottom-0 w-0.5 bg-gray-700" />
+        <div className="absolute left-7 top-12 bottom-0 w-0.5 bg-gray-700 hidden md:block" />
       )}
     </div>
   );
@@ -145,6 +146,7 @@ export function WorkflowPipeline({ onStepClick }: WorkflowPipelineProps) {
   const [activeStep, setActiveStep] = useState<string>('load');
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [isSubNavCollapsed, setIsSubNavCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isCollapsed } = useSideNav();
 
   const handleStepClick = (stepId: string) => {
@@ -153,50 +155,90 @@ export function WorkflowPipeline({ onStepClick }: WorkflowPipelineProps) {
       setCompletedSteps(new Set([...completedSteps, stepId]));
     }
     onStepClick(stepId);
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <div
-      className={`fixed top-16 mr-2 bg-slate-800 h-[calc(100vh-64px)] z-30 transition-all duration-300 md:block hidden
-      ${isSubNavCollapsed ? 'w-12' : 'w-64'} 
-      ${isCollapsed ? 'left-16' : 'left-64'}`}
-    >
-      {isSubNavCollapsed ? (
-        <div className="h-full flex flex-col items-center py-4 bg-gradient-to-b from-purple-600/20 via-slate-800 to-slate-800">
-          <button
-            onClick={() => setIsSubNavCollapsed(false)}
-            className="text-gray-400 hover:text-white mb-2"
-          >
-            <ChevronRight size={18} />
-          </button>
+    <>
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        className="fixed bottom-4 right-4 md:hidden z-50 bg-purple-600 p-3 rounded-full shadow-lg"
+      >
+        <Menu className="w-6 h-6 text-white" />
+      </button>
+
+      {/* Mobile Menu */}
+      <div
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${
+          isMobileMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
+
+      <div
+        className={`fixed bottom-0 left-0 right-0 bg-slate-800 z-50 transition-transform duration-300 md:hidden ${
+          isMobileMenuOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}
+        style={{ maxHeight: '70vh' }}
+      >
+        <div className="overflow-y-auto p-4">
+          {workflowSteps.map((step, index) => (
+            <WorkflowStepComponent
+              key={step.id}
+              {...step}
+              isActive={activeStep === step.id}
+              isCompleted={completedSteps.has(step.id)}
+              onClick={() => handleStepClick(step.id)}
+              isLast={index === workflowSteps.length - 1}
+            />
+          ))}
         </div>
-      ) : (
-        <div className="h-full flex flex-col">
-          <div className="p-3 border-b border-gray-700 flex justify-between items-center">
-            <h2 className="text-white font-semibold text-sm">Workflow</h2>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <div
+        className={`fixed top-16 mr-2 bg-slate-800 h-[calc(100vh-64px)] z-30 transition-all duration-300 hidden md:block
+        ${isSubNavCollapsed ? 'w-12' : 'w-64'} 
+        ${isCollapsed ? 'left-16' : 'left-64'}`}
+      >
+        {isSubNavCollapsed ? (
+          <div className="h-full flex flex-col items-center py-4 bg-gradient-to-b from-purple-600/20 via-slate-800 to-slate-800">
             <button
-              onClick={() => setIsSubNavCollapsed(true)}
-              className="text-gray-400 hover:text-white"
+              onClick={() => setIsSubNavCollapsed(false)}
+              className="text-gray-400 hover:text-white mb-2"
             >
-              <ChevronLeft size={18} />
+              <ChevronRight size={18} />
             </button>
           </div>
+        ) : (
+          <div className="h-full flex flex-col">
+            <div className="p-3 border-b border-gray-700 flex justify-between items-center">
+              <h2 className="text-white font-semibold text-sm">Workflow</h2>
+              <button
+                onClick={() => setIsSubNavCollapsed(true)}
+                className="text-gray-400 hover:text-white"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            </div>
 
-          <div className="flex-1 overflow-y-auto">
-            {workflowSteps.map((step, index) => (
-              <WorkflowStepComponent
-                key={step.id}
-                {...step}
-                isActive={activeStep === step.id}
-                isCompleted={completedSteps.has(step.id)}
-                onClick={() => handleStepClick(step.id)}
-                isLast={index === workflowSteps.length - 1}
-              />
-            ))}
+            <div className="flex-1 overflow-y-auto">
+              {workflowSteps.map((step, index) => (
+                <WorkflowStepComponent
+                  key={step.id}
+                  {...step}
+                  isActive={activeStep === step.id}
+                  isCompleted={completedSteps.has(step.id)}
+                  onClick={() => handleStepClick(step.id)}
+                  isLast={index === workflowSteps.length - 1}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 
