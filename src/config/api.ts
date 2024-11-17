@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  baseURL: 'http://localhost:5000/api',
+  baseURL: 'https://mlflowapi-b0csdtbuewaxd0ha.centralindia-01.azurewebsites.net/api',
   headers: {
     'Content-Type': 'application/json',
   },
