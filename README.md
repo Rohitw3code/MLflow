@@ -1,50 +1,103 @@
-# React + TypeScript + Vite
+# 🚀 MLflow.ai - Machine Learning Pipeline Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<div align="center">
+  <img src="https://raw.githubusercontent.com/vscode-icons/vscode-icons/master/icons/file_type_ai.svg" width="200" alt="MLflow Logo"/>
 
-Currently, two official plugins are available:
+  [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+  [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD62E)](https://vitejs.dev/)
+  [![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+</div>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 📖 About
 
-## Expanding the ESLint configuration
+MLflow.ai is a powerful machine learning pipeline platform that streamlines the process of data preprocessing, model training, and evaluation. Built with modern web technologies, it provides an intuitive interface for data scientists and machine learning engineers to manage their ML workflows efficiently.
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## 🛠️ Tech Stack
 
-- Configure the top-level `parserOptions` property like this:
+- **Frontend Framework**: React 18.3
+- **Build Tool**: Vite
+- **Language**: TypeScript
+- **Styling**: TailwindCSS
+- **Charts**: Recharts
+- **UI Components**: Radix UI
+- **Code Highlighting**: Prism.js
+- **Deployment**: Firebase Hosting
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 🔌 API Structure
+
+### 📊 Data Management API
+- `/load` - Load dataset
+- `/head` - Get first n rows
+- `/tail` - Get last n rows
+- `/shape` - Get dataset dimensions
+- `/describe` - Get statistical description
+- `/info` - Get dataset information
+- `/missing` - Get missing values analysis
+- `/dataset` - Get complete dataset
+- `/column-types` - Get column data types
+- `/visualization-data` - Get data for visualizations
+
+### ⚙️ Preprocessing API
+- Handle missing values
+- Encode categorical variables
+- Scale features
+- Split dataset
+- Delete columns
+- Update column types
+
+### 🤖 Model API
+- Initialize models
+- Train models
+- Evaluate performance
+- Make predictions
+
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## 🌟 Features
+
+- 📈 Interactive data visualization
+- 🔄 Real-time data preprocessing
+- 🤖 Multiple ML algorithms support
+- 📊 Comprehensive model evaluation
+- 🎯 Easy-to-use prediction interface
+- 💾 Automatic data type detection
+
+## 🔒 Environment Variables
+
+The project uses the following environment variables:
+- `VITE_GROQ_API_KEY` - API key for GROQ integration
+
+## 📦 Project Structure
+
+```
+src/
+├── api/          # API integration
+├── config/       # Configuration files
+├── hooks/        # Custom React hooks
+└── components/   # React components
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## 🤝 Contributing
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+<div align="center">
+  Made with ❤️ by the Rohit Kumar
+</div>
